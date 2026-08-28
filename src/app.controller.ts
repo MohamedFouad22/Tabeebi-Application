@@ -9,6 +9,7 @@ import { rateLimit } from "express-rate-limit";
 import hpp from "hpp";
 import ExpressMongoSanitize from "express-mongo-sanitize";
 import { globalError } from "./Utils/Security/Error/global.error.utils";
+import authRouter from "./Modules/Auth/auth.controller";
 
 const limit = rateLimit({
   limit: 200,
@@ -22,6 +23,8 @@ export const bootstrap = async () => {
   const port: number = Number(process.env.PORT) || 5000;
 
   dotenv.config({ path: `${path.resolve()}/config/.env.dev` });
+
+  app.use("/api/v1/auth", authRouter);
 
   await connectionDB();
   app.use(cors(), helmet(), limit, hpp(), ExpressMongoSanitize());

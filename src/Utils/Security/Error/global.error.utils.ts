@@ -4,7 +4,7 @@ export class ApplicationException extends Error {
   constructor(
     message: string,
     private statusCode: number = 400,
-    options: ErrorOptions,
+    options?: ErrorOptions,
   ) {
     super(message, options);
     this.message = this.constructor.name;
@@ -13,37 +13,37 @@ export class ApplicationException extends Error {
 }
 
 export class BadRequestException extends ApplicationException {
-  constructor(message: string, options: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, 400, options);
   }
 }
 
 export class UnauthorizedException extends ApplicationException {
-  constructor(message: string, options: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, 401, options);
   }
 }
 
 export class ForbiddenException extends ApplicationException {
-  constructor(message: string, options: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, 403, options);
   }
 }
 
 export class NotFoundException extends ApplicationException {
-  constructor(message: string, options: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, 404, options);
   }
 }
 
 export class ConflictException extends ApplicationException {
-  constructor(message: string, options: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, 409, options);
   }
 }
 
 export class InternalServerErrorException extends ApplicationException {
-  constructor(message: string, options: ErrorOptions) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, 500, options);
   }
 }
