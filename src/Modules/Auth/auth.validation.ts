@@ -47,3 +47,10 @@ export const resendOTPSchema = {
     email: generalFields.email,
   }),
 };
+
+export const loginSchema = {
+  body: z.strictObject({
+    email: generalFields.email,
+    password: generalFields.password,
+  }),
+};

@@ -3,6 +3,7 @@ import { sendEmail } from "../Email/email.utils";
 import { confirmTemplate } from "../Email/Templates/confirmEmail.email.utils";
 import { SubjectEnum } from "../Enum/enum.utils";
 import Mail from "nodemailer/lib/mailer";
+import { welcomeTemplate } from "../Email/Templates/welcomeEmail.utils";
 
 export const eventEmitter = new EventEmitter();
 
@@ -33,6 +34,16 @@ eventEmitter.on("resendOTP", async (data: IEmail) => {
       data.firstName,
       SubjectEnum.RESEND_OTP,
     );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Confirm Email ❌");
+  }
+});
+
+eventEmitter.on("welcome", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.WELCOME_EMAIL;
+    data.html = welcomeTemplate(data.firstName, SubjectEnum.WELCOME_EMAIL);
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Confirm Email ❌");

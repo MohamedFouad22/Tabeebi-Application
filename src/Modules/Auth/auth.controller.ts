@@ -2,7 +2,12 @@ import { Router } from "express";
 const router: Router = Router();
 import authServices from "./auth.services";
 import { validation } from "../../Middleware/validation.middleware";
-import { confirmEmailSchema, resendOTPSchema, signupSchema } from "./auth.validation";
+import {
+  confirmEmailSchema,
+  loginSchema,
+  resendOTPSchema,
+  signupSchema,
+} from "./auth.validation";
 
 router.post("/signup", validation(signupSchema), authServices.signup);
 router.patch(
@@ -15,5 +20,6 @@ router.patch(
   validation(resendOTPSchema),
   authServices.resendOTP,
 );
+router.post("/login", validation(loginSchema), authServices.login);
 
 export default router;
