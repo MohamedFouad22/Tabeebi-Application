@@ -6,27 +6,16 @@ export const signupSchema = {
     .strictObject({
       firstName: generalFields.firstName,
       lastName: generalFields.lastName,
-      userName: generalFields.userName,
+      userName: generalFields.userName.optional(),
       email: generalFields.email,
       phone: generalFields.phone,
       password: generalFields.password,
       confirmPassword: generalFields.confirmPassword,
-      OTPVerificationCode: generalFields.OTPVerificationCode,
-      profileImage: generalFields.profileImage,
-      coverImages: generalFields.coverImages,
+      profileImage: generalFields.profileImage.optional(),
+      coverImages: generalFields.coverImages.optional(),
       age: generalFields.age,
-      twoFactorAuthStatus: generalFields.twoFactorAuthStatus,
-      provider: generalFields.provider,
       gender: generalFields.gender,
       role: generalFields.role,
-      VerificationAccountExpiredAt: generalFields.VerificationAccountExpiredAt,
-      changeCredientialsTime: generalFields.changeCredientialsTime,
-      OTPExpiredAt: generalFields.OTPExpiredAt,
-      confirmedAt: generalFields.confirmedAt,
-      freezedAt: generalFields.freezedAt,
-      restoredAt: generalFields.restoredAt,
-      freezedBy: generalFields.freezedAt,
-      restoredBy: generalFields.restoredAt,
     })
     .superRefine((value, ctx) => {
       if (value.password && value.password !== value.confirmPassword) {
@@ -44,4 +33,17 @@ export const signupSchema = {
         });
       }
     }),
+};
+
+export const confirmEmailSchema = {
+  body: z.strictObject({
+    otp: generalFields.otp,
+    email: generalFields.email,
+  }),
+};
+
+export const resendOTPSchema = {
+  body: z.strictObject({
+    email: generalFields.email,
+  }),
 };

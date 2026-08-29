@@ -127,6 +127,11 @@ export const userSchema = new Schema<IUser>(
   },
 );
 
+userSchema.index(
+  { VerificationAccountExpiredAt: 1 },
+  { expireAfterSeconds: 0 },
+);
+
 userSchema
   .virtual("userName")
   .set(function (value) {

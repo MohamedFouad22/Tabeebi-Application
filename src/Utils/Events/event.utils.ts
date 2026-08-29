@@ -1,0 +1,40 @@
+import { EventEmitter } from "node:events";
+import { sendEmail } from "../Email/email.utils";
+import { confirmTemplate } from "../Email/Templates/confirmEmail.email.utils";
+import { SubjectEnum } from "../Enum/enum.utils";
+import Mail from "nodemailer/lib/mailer";
+
+export const eventEmitter = new EventEmitter();
+
+export interface IEmail extends Mail.Options {
+  code: number;
+  firstName: string;
+}
+
+eventEmitter.on("confirmEmail", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.CONFIRM_EMAIL;
+    data.html = confirmTemplate(
+      data.code,
+      data.firstName,
+      SubjectEnum.CONFIRM_EMAIL,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Confirm Email ❌");
+  }
+});
+
+eventEmitter.on("resendOTP", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.RESEND_OTP;
+    data.html = confirmTemplate(
+      data.code,
+      data.firstName,
+      SubjectEnum.RESEND_OTP,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Confirm Email ❌");
+  }
+});

@@ -36,7 +36,7 @@ export abstract class DateBaseRepository<TDocument> {
     projection?: ProjectionType<TDocument> | null | undefined;
     options?: QueryOptions<TDocument> | null | undefined;
   }) => {
-    await this.model.findOne(filter, projection, options);
+    return await this.model.findOne(filter, projection, options);
   };
 
   findById = async ({
@@ -60,7 +60,7 @@ export abstract class DateBaseRepository<TDocument> {
     update?: UpdateQuery<TDocument>;
     options?: QueryOptions<TDocument> | null;
   }) => {
-    await this.model.findOneAndUpdate(filter, update, options);
+    return await this.model.findOneAndUpdate(filter, update, options);
   };
 
   findByIdUpdate = async ({
@@ -72,17 +72,17 @@ export abstract class DateBaseRepository<TDocument> {
     update?: UpdateQuery<TDocument>;
     options?: QueryOptions<TDocument> | null;
   }) => {
-    await this.model.findByIdAndUpdate(id, update, options);
+    return await this.model.findByIdAndUpdate(id, update, options);
   };
 
   create = async ({
-    docs,
+    data,
     options,
   }: {
-    docs: Array<DeepPartial<ApplyBasicCreateCasting<Require_id<TDocument>>>>;
-    options: CreateOptions;
+    data: Array<DeepPartial<ApplyBasicCreateCasting<Require_id<TDocument>>>>;
+    options?: CreateOptions;
   }) => {
-    return await this.model.create(docs, options);
+    return await this.model.create(data, options);
   };
 
   updateOne = async ({

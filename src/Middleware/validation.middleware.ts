@@ -27,7 +27,9 @@ export const validation = (schema: schemaType) => {
     }
 
     if (validationError.length > 0) {
-      throw new BadRequestException("Error In Validation");
+      throw new BadRequestException("Validation Error", {
+        cause: validationError,
+      });
     }
     return next() as unknown as NextFunction;
   };

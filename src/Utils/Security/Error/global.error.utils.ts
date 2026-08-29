@@ -1,14 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 
+interface IError extends Error {
+  statusCode: Number;
+}
+
 export class ApplicationException extends Error {
   constructor(
     message: string,
-    private statusCode: number = 400,
+    public statusCode: number,
     options?: ErrorOptions,
   ) {
     super(message, options);
-    this.message = this.constructor.name;
-    this.statusCode = statusCode;
+    ((this.name = this.constructor.name), (this.statusCode = statusCode));
   }
 }
 
@@ -48,20 +51,16 @@ export class InternalServerErrorException extends ApplicationException {
   }
 }
 
-interface IError extends Error {
-  statusCode: Number;
-}
-
 export const globalError = (
   error: IError,
   req: Request,
   res: Response,
   next: NextFunction,
-): Response => {
+) => {
   const statusCode = error.statusCode ?? 500;
   return res.status(statusCode as number).json({
-    message: "Something Went Wrong",
     cause: error.cause,
     stack: process.env.MODE === "DEV" ? error.stack : undefined,
+    message: "Something Went Wrong",
   });
 };

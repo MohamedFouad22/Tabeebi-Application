@@ -19,3 +19,9 @@ export enum TwoAuthFactorEnum {
   ACTIVE = "ACTIVE",
   INACTIVE = "INACTIVE",
 }
+
+export enum SubjectEnum {
+  CONFIRM_EMAIL = "Please Confirm Your Email",
+  WELCOME_EMAIL = "Welcome To The Tabeebi Application",
+  RESEND_OTP = "Your New Verification Code",
+}
