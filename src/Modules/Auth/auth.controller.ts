@@ -9,7 +9,10 @@ import {
   resendOTPSchema,
   resetPasswordSchema,
   signupSchema,
+  updatedPasswordSchema,
 } from "./auth.validation";
+import { authentication } from "../../Middleware/authentication.middleware";
+import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 
 router.post("/signup", validation(signupSchema), authServices.signup);
 router.patch(
@@ -32,6 +35,16 @@ router.patch(
   "/reset-password",
   validation(resetPasswordSchema),
   authServices.resetPassword,
+);
+router.patch(
+  "/update-password",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  validation(updatedPasswordSchema),
+  authServices.updatePassword,
 );
 
 export default router;

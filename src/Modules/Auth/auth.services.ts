@@ -7,6 +7,7 @@ import {
   resendOTPDTO,
   resetPasswordDTO,
   signupDTO,
+  updatedPasswordDTO,
 } from "./auth.dto";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import {
@@ -238,6 +239,34 @@ class AuthenticationServices {
     });
 
     eventEmitter.emit("resetPasswordAlert", {
+      to: user.email,
+      firstName: user.userName,
+    });
+
+    return res.status(200).json({ message: "Password Updated Successfully" });
+  };
+
+  updatePassword = async (req: Request, res: Response): Promise<Response> => {
+    const { oldPassword, password, confirmPassword }: updatedPasswordDTO =
+      req.body;
+
+    if (!(await compareData(oldPassword, req.user.password))) {
+      throw new BadRequestException("Invalid Data");
+    }
+
+    if (password === oldPassword)
+      throw new BadRequestException("This Is Indeed The Current Password");
+
+    const user = await this._userModel.findOneAndUpdate({
+      filter: { email: req.user.email },
+      update: {
+        password: await hashData(password),
+        $inc: { __v: 1 },
+      },
+    });
+    if (!user) throw new BadRequestException("Failed To Update User");
+
+    eventEmitter.emit("updatePasswordAlert", {
       to: user.email,
       firstName: user.userName,
     });

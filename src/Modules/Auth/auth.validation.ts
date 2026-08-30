@@ -79,3 +79,21 @@ export const resetPasswordSchema = {
       }
     }),
 };
+
+export const updatedPasswordSchema = {
+  body: z
+  .strictObject({
+      oldPassword: generalFields.password,
+      password: generalFields.password,
+      confirmPassword: generalFields.password,
+    })
+    .superRefine((value, ctx) => {
+      if (value.password !== value.confirmPassword) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["password"],
+          message: "Password Miss Match",
+        });
+      }
+    }),
+};

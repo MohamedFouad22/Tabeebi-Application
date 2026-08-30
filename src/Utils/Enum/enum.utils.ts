@@ -37,4 +37,5 @@ export enum SubjectEnum {
   RESEND_OTP = "Your New Verification Code",
   RESET_PASSWORD = "Please Reset Your Password",
   RESET_PASSWORD_ALERT = "Your Password Has Been Changed",
+  UPDATE_PASSWORD_ALERT = "Your Password Has Been Updated",
 }

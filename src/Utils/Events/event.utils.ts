@@ -5,7 +5,8 @@ import { SubjectEnum } from "../Enum/enum.utils";
 import Mail from "nodemailer/lib/mailer";
 import { welcomeTemplate } from "../Email/Templates/welcomeEmail.utils";
 import { resetPasswordTemplate } from "../Email/Templates/forgetPasswordEmail.utils";
-import { passwordChangedAlertTemplate } from "../Email/Templates/reserPassword.email";
+import { passwordChangedAlertTemplate } from "../Email/Templates/resetPassword.email";
+import { updatePasswordAlertTemplate } from "../Email/Templates/updatePassword.email.utils";
 
 export const eventEmitter = new EventEmitter();
 
@@ -76,5 +77,18 @@ eventEmitter.on("resetPasswordAlert", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Reset Password Alert Email ❌");
+  }
+});
+
+eventEmitter.on("updatePasswordAlert", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.UPDATE_PASSWORD_ALERT;
+    data.html = updatePasswordAlertTemplate(
+      data.firstName,
+      SubjectEnum.UPDATE_PASSWORD_ALERT,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Update Password Alert Email ❌");
   }
 });

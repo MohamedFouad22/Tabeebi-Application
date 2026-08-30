@@ -6,6 +6,7 @@ import {
   resendOTPSchema,
   resetPasswordSchema,
   signupSchema,
+  updatedPasswordSchema,
 } from "./auth.validation";
 
 export type signupDTO = z.infer<typeof signupSchema.body>;
@@ -14,3 +15,4 @@ export type resendOTPDTO = z.infer<typeof resendOTPSchema.body>;
 export type loginDTO = z.infer<typeof loginSchema.body>;
 export type forgetPasswordDTO = z.infer<typeof forgetPasswordSchema.body>;
 export type resetPasswordDTO = z.infer<typeof resetPasswordSchema.body>;
+export type updatedPasswordDTO = z.infer<typeof updatedPasswordSchema.body>;

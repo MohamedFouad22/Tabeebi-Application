@@ -6,9 +6,9 @@ import {
 } from "../Utils/Security/Error/global.error.utils";
 import { decodedToken } from "../Utils/Tokens/token.utils";
 
-export const authentication = async (
+export const authentication = (
   tokenType: TokenTypeEnum = TokenTypeEnum.ACCESS,
-  accessRoles: RoleEnum = RoleEnum.USER,
+  accessRoles: RoleEnum[],
 ) => {
   return async (
     req: Request,
