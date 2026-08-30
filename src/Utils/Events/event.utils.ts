@@ -4,6 +4,8 @@ import { confirmTemplate } from "../Email/Templates/confirmEmail.email.utils";
 import { SubjectEnum } from "../Enum/enum.utils";
 import Mail from "nodemailer/lib/mailer";
 import { welcomeTemplate } from "../Email/Templates/welcomeEmail.utils";
+import { resetPasswordTemplate } from "../Email/Templates/forgetPasswordEmail.utils";
+import { passwordChangedAlertTemplate } from "../Email/Templates/reserPassword.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -36,7 +38,7 @@ eventEmitter.on("resendOTP", async (data: IEmail) => {
     );
     await sendEmail(data);
   } catch (error) {
-    console.log("Failed To Send Confirm Email ❌");
+    console.log("Failed To Send New OTP Email ❌");
   }
 });
 
@@ -46,6 +48,33 @@ eventEmitter.on("welcome", async (data: IEmail) => {
     data.html = welcomeTemplate(data.firstName, SubjectEnum.WELCOME_EMAIL);
     await sendEmail(data);
   } catch (error) {
-    console.log("Failed To Send Confirm Email ❌");
+    console.log("Failed To Send Welcome Email ❌");
+  }
+});
+
+eventEmitter.on("resetPassword", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.RESET_PASSWORD;
+    data.html = resetPasswordTemplate(
+      data.code,
+      data.firstName,
+      SubjectEnum.RESET_PASSWORD,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Reset Password Email ❌");
+  }
+});
+
+eventEmitter.on("resetPasswordAlert", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.RESET_PASSWORD_ALERT;
+    data.html = passwordChangedAlertTemplate(
+      data.firstName,
+      SubjectEnum.RESET_PASSWORD_ALERT,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Reset Password Alert Email ❌");
   }
 });

@@ -1,6 +1,13 @@
 import { Request, Response } from "express";
 import { userModel } from "../../DB/Models/user.model";
-import { confirmEmailDTO, loginDTO, resendOTPDTO, signupDTO } from "./auth.dto";
+import {
+  confirmEmailDTO,
+  forgetPasswordDTO,
+  loginDTO,
+  resendOTPDTO,
+  resetPasswordDTO,
+  signupDTO,
+} from "./auth.dto";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import {
   BadRequestException,
@@ -10,8 +17,7 @@ import {
 import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
-import { v4 as uuid } from "uuid";
-import { generateToken } from "../../Utils/Tokens/token.utils";
+import { createLoginCredentials } from "../../Utils/Tokens/token.utils";
 
 class AuthenticationServices {
   private _userModel = new UserRepository(userModel);
@@ -157,41 +163,86 @@ class AuthenticationServices {
       throw new BadRequestException("Invalid Data");
     }
 
-    const accessToken = await generateToken({
-      payload: {
-        _id: user._id,
-        email: user.email,
-        userName: user.userName,
-        role: user.role,
-      },
-      secretOrPrivateKey: process.env.ACCESS_TOKEN_SECRET_KEY as string,
-      options: {
-        expiresIn: Number(process.env.ACCESS_TOKEN_EXPIRES_IN),
-        jwtid: uuid(),
-      },
-    });
-
-    const refreshToken = await generateToken({
-      payload: {
-        _id: user._id,
-        email: user.email,
-        userName: user.userName,
-        role: user.role,
-      },
-      secretOrPrivateKey: process.env.REFRESH_TOKEN_SECRET_KEY as string,
-      options: {
-        expiresIn: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
-        jwtid: uuid(),
-      },
-    });
+    const credentials = await createLoginCredentials(user);
 
     return res.status(200).json({
       message: "Login Successfully",
-      credentials: {
-        accessToken,
-        refreshToken,
+      credentials,
+    });
+  };
+
+  forgetPassword = async (req: Request, res: Response): Promise<Response> => {
+    const forgetPasswordSchema: forgetPasswordDTO = req.body;
+
+    const user = await this._userModel.findOne({
+      filter: {
+        email: forgetPasswordSchema.email,
+        confirmedAt: { $exists: true },
       },
     });
+    if (!user)
+      throw new BadRequestException("Invalid Data Or Confirm Your Email First");
+
+    const otp = await generateOtp();
+
+    await this._userModel.updateOne({
+      filter: { email: user.email },
+      update: {
+        OTPVerificationCode: await hashData(otp.toString()),
+        OTPExpiredAt: new Date(Date.now() + 5 * 60 * 1000),
+      },
+    });
+
+    eventEmitter.emit("resetPassword", {
+      to: user.email,
+      code: otp,
+      firstName: user.userName,
+    });
+    return res
+      .status(200)
+      .json({ message: "The Password Reset Email Has Been Sent Successfully" });
+  };
+
+  resetPassword = async (req: Request, res: Response): Promise<Response> => {
+    const resetPasswordSchema: resetPasswordDTO = req.body;
+
+    const user = await this._userModel.findOne({
+      filter: {
+        email: resetPasswordSchema.email,
+        OTPVerificationCode: { $exists: true },
+        OTPExpiredAt: { $exists: true },
+      },
+    });
+    if (!user) throw new NotFoundException("Invalid Data");
+
+    if (new Date(Date.now()) > user.OTPExpiredAt) {
+      throw new BadRequestException("OTP Expired , Please Click Resend OTP");
+    }
+
+    if (
+      !(await compareData(resetPasswordSchema.otp, user.OTPVerificationCode))
+    ) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    await this._userModel.updateOne({
+      filter: { email: resetPasswordSchema.email },
+      update: {
+        password: await hashData(resetPasswordSchema.password),
+        $unset: {
+          OTPVerificationCode: true,
+          OTPExpiredAt: true,
+        },
+        $inc: { __v: 1 },
+      },
+    });
+
+    eventEmitter.emit("resetPasswordAlert", {
+      to: user.email,
+      firstName: user.userName,
+    });
+
+    return res.status(200).json({ message: "Password Updated Successfully" });
   };
 }
 export default new AuthenticationServices();

@@ -54,3 +54,28 @@ export const loginSchema = {
     password: generalFields.password,
   }),
 };
+
+export const forgetPasswordSchema = {
+  body: z.strictObject({
+    email: generalFields.email,
+  }),
+};
+
+export const resetPasswordSchema = {
+  body: z
+    .strictObject({
+      email: generalFields.email,
+      otp: generalFields.otp,
+      password: generalFields.password,
+      confirmPassword: generalFields.password,
+    })
+    .superRefine((value, ctx) => {
+      if (value.password !== value.confirmPassword) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["password"],
+          message: "Password Miss Match",
+        });
+      }
+    }),
+};
