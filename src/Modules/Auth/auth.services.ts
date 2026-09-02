@@ -14,6 +14,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  UnauthorizedException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
@@ -152,16 +153,34 @@ class AuthenticationServices {
     const loginSchema: loginDTO = req.body;
 
     const user = await this._userModel.findOne({
-      filter: { email: loginSchema.email },
+      filter: {
+        email: loginSchema.email,
+      },
     });
     if (!user) throw new NotFoundException("Invalid Data");
 
-    if (!user.confirmedAt) {
-      throw new BadRequestException("Please confirm your email first");
-    }
-
     if (!(await compareData(loginSchema.password, user.password))) {
       throw new BadRequestException("Invalid Data");
+    }
+
+    if (user.freezedAt && user.freezedBy) {
+      if (user.freezedBy.toString() !== user._id.toString()) {
+        throw new UnauthorizedException("Your Account Has Been Frozen");
+      } else {
+        await this._userModel.updateOne({
+          filter: { email: user.email },
+          update: {
+            $unset: { freezedAt: true, freezedBy: true },
+            restoredAt: new Date(Date.now()),
+            restoredBy: user._id,
+            $inc: { __v: 1 },
+          },
+        });
+      }
+    }
+
+    if (!user.confirmedAt) {
+      throw new BadRequestException("Please confirm your email first");
     }
 
     const credentials = await createLoginCredentials(user);

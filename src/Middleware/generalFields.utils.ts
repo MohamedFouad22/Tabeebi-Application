@@ -12,7 +12,15 @@ export const generalFields = {
   lastName: z.string().trim().min(3).max(25),
   userName: z.string().trim().min(3).max(25).optional(),
   email: z.email(),
-  phone: z.string(),
+  phone: z
+    .string()
+    .regex(
+      /^(?:(?:\+20|0)?1[0125]\d{8}|(?:\+966|0)?5\d{8}|(?:\+971|0)?5[024568]\d{7}|(?:\+965)?Wait\d{8}|(?:\+965|0)?[569]\d{7})$/,
+      {
+        message:
+          "Phone number must be a valid Egyptian, Saudi, Emirati, or Kuwaiti number",
+      },
+    ),
   password: z.string().min(8),
   confirmPassword: z.string(),
   OTPVerificationCode: z.string(),
@@ -38,4 +46,5 @@ export const generalFields = {
     Types.ObjectId.isValid(value);
   }),
   otp: z.string(),
+  userId: z.string(),
 };
