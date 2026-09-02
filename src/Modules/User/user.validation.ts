@@ -22,3 +22,9 @@ export const editProfileSchema = {
     gender: generalFields.gender.optional(),
   }),
 };
+
+export const enableTwoAuthFactorSchema = {
+  body: z.strictObject({
+    otp: generalFields.otp,
+  }),
+};

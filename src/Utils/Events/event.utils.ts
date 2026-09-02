@@ -7,6 +7,7 @@ import { welcomeTemplate } from "../Email/Templates/welcomeEmail.utils";
 import { resetPasswordTemplate } from "../Email/Templates/forgetPasswordEmail.utils";
 import { passwordChangedAlertTemplate } from "../Email/Templates/resetPassword.email";
 import { updatePasswordAlertTemplate } from "../Email/Templates/updatePassword.email.utils";
+import { enable2faTemplate } from "../Email/Templates/twoAuthFactor.email.utils";
 
 export const eventEmitter = new EventEmitter();
 
@@ -90,5 +91,19 @@ eventEmitter.on("updatePasswordAlert", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Update Password Alert Email ❌");
+  }
+});
+
+eventEmitter.on("twoAuthFactorAuthRequest", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.TWO_AUTH_FACTOR_REQUEST;
+    data.html = enable2faTemplate(
+      data.code,
+      data.firstName,
+      SubjectEnum.TWO_AUTH_FACTOR_REQUEST,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Two Auth Factor Request Email ❌");
   }
 });

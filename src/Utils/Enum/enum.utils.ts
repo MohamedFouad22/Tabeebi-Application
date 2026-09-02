@@ -38,4 +38,5 @@ export enum SubjectEnum {
   RESET_PASSWORD = "Please Reset Your Password",
   RESET_PASSWORD_ALERT = "Your Password Has Been Changed",
   UPDATE_PASSWORD_ALERT = "Your Password Has Been Updated",
+  TWO_AUTH_FACTOR_REQUEST = "Please onfirm The TWO Auth Factor Activation Request",
 }

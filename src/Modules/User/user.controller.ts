@@ -49,5 +49,23 @@ router.patch(
   validation(editProfileSchema),
   userServices.editProfile,
 );
+router.post(
+  "/two-auth-factor-req",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.twoAuthFactorRequest,
+);
+router.patch(
+  "/enable-two-auth-factor",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.enableTwoAuthFactor,
+);
 
 export default router;

@@ -20,6 +20,7 @@ import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { createLoginCredentials } from "../../Utils/Tokens/token.utils";
+import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
 
 class AuthenticationServices {
   private _userModel = new UserRepository(userModel);
@@ -45,7 +46,7 @@ class AuthenticationServices {
           gender: signupSchema.gender,
           role: signupSchema.role,
           VerificationAccountExpiredAt: new Date(Date.now() + 10 * 60 * 1000),
-          phone: signupSchema.phone,
+          phone: encryption(signupSchema.phone),
           profileImage: signupSchema.profileImage,
           coverImages: signupSchema.coverImages,
           OTPVerificationCode: await hashData(String(otp)),
@@ -72,7 +73,10 @@ class AuthenticationServices {
       filter: {
         email: resendOTPSchema.email,
         OTPExpiredAt: { $exists: true },
-        OTPVerificationCode: { $exists: true },
+        $or: [
+          { OTPVerificationCode: { $exists: true } },
+          { TwoAuthFactorVerificationCode: { $exists: true } },
+        ],
       },
     });
     if (!checkUser)
@@ -85,7 +89,12 @@ class AuthenticationServices {
     await this._userModel.updateOne({
       filter: { email: resendOTPSchema.email },
       update: {
-        OTPVerificationCode: await hashData(String(otp)),
+        ...(checkUser.OTPVerificationCode && {
+          OTPVerificationCode: await hashData(String(otp)),
+        }),
+        ...(checkUser.TwoAuthFactorVerificationCode && {
+          TwoAuthFactorVerificationCode: await hashData(String(otp)),
+        }),
         OTPExpiredAt: new Date(Date.now() + 5 * 60 * 1000),
         ...(checkUser.VerificationAccountExpiredAt && {
           VerificationAccountExpiredAt: new Date(Date.now() + 10 * 60 * 1000),

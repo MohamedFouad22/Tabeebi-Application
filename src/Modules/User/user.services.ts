@@ -3,19 +3,20 @@ import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import {
   editProfileDTO,
+  enableTwoAuthFactorDTO,
   freezeAccountDTO,
   restoreAccountDTO,
 } from "./user.dto";
-import { RoleEnum } from "../../Utils/Enum/enum.utils";
+import { RoleEnum, TwoAuthFactorEnum } from "../../Utils/Enum/enum.utils";
 import {
   BadRequestException,
   NotFoundException,
   UnauthorizedException,
 } from "../../Utils/Security/Error/global.error.utils";
-import {
-  decryption,
-  encryption,
-} from "../../Utils/Security/Encryption/encryption.utils";
+import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
+import { eventEmitter } from "../../Utils/Events/event.utils";
+import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
+import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 
 export class userServices {
   private _userModel = new UserRepository(userModel);
@@ -108,6 +109,87 @@ export class userServices {
     if (!user) throw new BadRequestException("Failed To Edit Your Profile");
 
     return res.status(200).json({ message: "Profile Updated Successfully" });
+  };
+
+  twoAuthFactorRequest = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const otp = await generateOtp();
+
+    const user = await this._userModel.findOneAndUpdate({
+      filter: {
+        email: req.user.email,
+        twoFactorAuthStatus: TwoAuthFactorEnum.INACTIVE,
+      },
+      update: {
+        TwoAuthFactorVerificationCode: await hashData(otp.toString()),
+        OTPExpiredAt: new Date(Date.now() + 5 * 60 * 1000),
+      },
+      options: { new: true },
+    });
+    if (!user) {
+      throw new BadRequestException("2FA is already enabled or user not found");
+    }
+
+    eventEmitter.emit("twoAuthFactorAuthRequest", {
+      to: user.email,
+      code: otp,
+      firstName: user.userName,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "An Identity Confirmation Request Has Been Sent" });
+  };
+
+  enableTwoAuthFactor = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { otp }: enableTwoAuthFactorDTO = req.body;
+
+    const user = await this._userModel.findOne({
+      filter: {
+        email: req.user.email,
+        TwoAuthFactorVerificationCode: { $exists: true },
+        OTPExpiredAt: { $exists: true },
+        twoFactorAuthStatus: TwoAuthFactorEnum.INACTIVE,
+        confirmedAt: { $exists: true },
+      },
+    });
+    if (!user)
+      throw new BadRequestException(
+        "This Feature Is Already Enabled In Your Account, Or There's a Problem With Its Activation",
+      );
+
+    if (new Date() > user.OTPExpiredAt) {
+      await this._userModel.updateOne({
+        filter: { email: user.email },
+        update: {
+          $unset: { TwoAuthFactorVerificationCode: true, OTPExpiredAt: true },
+        },
+      });
+      throw new BadRequestException("OTP Expired");
+    }
+
+    if (!(await compareData(otp, user.TwoAuthFactorVerificationCode))) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    await this._userModel.updateOne({
+      filter: { email: user.email },
+      update: {
+        twoFactorAuthStatus: TwoAuthFactorEnum.ACTIVE,
+        twoAuthFactorEnabledAt: new Date(Date.now()),
+        $unset: { TwoAuthFactorVerificationCode: true, OTPExpiredAt: true },
+        $inc: { __v: 1 },
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Two Auth Factor Enabled Successfully" });
   };
 }
 

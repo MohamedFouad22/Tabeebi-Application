@@ -16,6 +16,7 @@ export interface IUser {
   phone: string;
   password: string;
   OTPVerificationCode: string;
+  TwoAuthFactorVerificationCode?: string;
   profileImage: string;
   coverImages: string[];
 
@@ -28,6 +29,7 @@ export interface IUser {
 
   VerificationAccountExpiredAt: Date;
   changeCredientialsTime?: Date;
+  twoAuthFactorEnabledAt?: Date;
   OTPExpiredAt: Date;
   confirmedAt: Date;
   createdAt: Date;
@@ -77,6 +79,7 @@ export const userSchema = new Schema<IUser>(
       required: true,
     },
     OTPVerificationCode: String,
+    TwoAuthFactorVerificationCode: String,
     profileImage: String,
     coverImages: [String],
     twoFactorAuthStatus: {
@@ -113,6 +116,7 @@ export const userSchema = new Schema<IUser>(
     },
     VerificationAccountExpiredAt: Date,
     changeCredientialsTime: Date,
+    twoAuthFactorEnabledAt: Date,
     OTPExpiredAt: Date,
     confirmedAt: Date,
     freezedAt: Date,
