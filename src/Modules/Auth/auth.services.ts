@@ -8,6 +8,7 @@ import {
   resetPasswordDTO,
   signupDTO,
   updatedPasswordDTO,
+  verifyTwoAuthFactorDTO,
 } from "./auth.dto";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import {
@@ -21,6 +22,7 @@ import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { createLoginCredentials } from "../../Utils/Tokens/token.utils";
 import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
+import { TwoAuthFactorEnum } from "../../Utils/Enum/enum.utils";
 
 class AuthenticationServices {
   private _userModel = new UserRepository(userModel);
@@ -192,12 +194,78 @@ class AuthenticationServices {
       throw new BadRequestException("Please confirm your email first");
     }
 
-    const credentials = await createLoginCredentials(user);
+    if (user.twoFactorAuthStatus === TwoAuthFactorEnum.ACTIVE) {
+      const otp = await generateOtp();
 
+      await this._userModel.updateOne({
+        filter: { email: user.email },
+        update: {
+          TwoAuthFactorVerificationCode: await hashData(otp.toString()),
+          OTPExpiredAt: new Date(Date.now() + 5 * 60 * 1000),
+          $inc: { __v: 1 },
+        },
+      });
+
+      eventEmitter.emit("twoAuthFactorAuthConfirm", {
+        to: user.email,
+        code: otp,
+        firstName: user.userName,
+      });
+      return res.status(200).json({
+        message: "2FA OTP sent to your email. Please verify to complete login.",
+        requires2FA: true,
+      });
+    }
+
+    const credentials = await createLoginCredentials(user);
     return res.status(200).json({
       message: "Login Successfully",
       credentials,
     });
+  };
+
+  verifyTwoAuthFactor = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { email, otp }: verifyTwoAuthFactorDTO = req.body;
+
+    const user = await this._userModel.findOne({
+      filter: {
+        email,
+        OTPExpiredAt: { $exists: true },
+        TwoAuthFactorVerificationCode: { $exists: true },
+      },
+    });
+    if (!user) throw new BadRequestException("Invalid Or Missing Data");
+
+    if (!user?.OTPExpiredAt)
+      throw new BadRequestException("Data Missing OTP Expiration Time");
+
+    if (new Date(Date.now()) > user?.OTPExpiredAt) {
+      throw new BadRequestException("OTP Expired");
+    }
+
+    if (!(await compareData(otp, user.TwoAuthFactorVerificationCode))) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    await this._userModel.updateOne({
+      filter: { _id: user._id },
+      update: {
+        $unset: {
+          TwoAuthFactorVerificationCode: true,
+          OTPExpiredAt: true,
+        },
+        $inc: { __v: 1 },
+      },
+    });
+
+    const credentials = await createLoginCredentials(user);
+
+    return res
+      .status(200)
+      .json({ message: "Verify Accout Successfully", credentials });
   };
 
   forgetPassword = async (req: Request, res: Response): Promise<Response> => {

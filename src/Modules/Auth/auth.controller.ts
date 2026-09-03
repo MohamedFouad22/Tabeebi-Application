@@ -10,6 +10,7 @@ import {
   resetPasswordSchema,
   signupSchema,
   updatedPasswordSchema,
+  verifyTwoAuthFactorSchema,
 } from "./auth.validation";
 import { authentication } from "../../Middleware/authentication.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
@@ -46,5 +47,9 @@ router.patch(
   validation(updatedPasswordSchema),
   authServices.updatePassword,
 );
-
+router.post(
+  "/verify-two-auth-factor",
+  validation(verifyTwoAuthFactorSchema),
+  authServices.verifyTwoAuthFactor,
+);
 export default router;

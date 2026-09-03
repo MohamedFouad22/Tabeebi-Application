@@ -36,6 +36,7 @@ export interface IUser {
   updatedAt?: Date;
   freezedAt?: Date;
   restoredAt?: Date;
+  entryPermitPeriod?: Date;
 
   freezedBy?: Types.ObjectId;
   restoredBy?: Types.ObjectId;
@@ -117,6 +118,7 @@ export const userSchema = new Schema<IUser>(
     VerificationAccountExpiredAt: Date,
     changeCredientialsTime: Date,
     twoAuthFactorEnabledAt: Date,
+    entryPermitPeriod: Date,
     OTPExpiredAt: Date,
     confirmedAt: Date,
     freezedAt: Date,
@@ -133,7 +135,12 @@ export const userSchema = new Schema<IUser>(
 
 userSchema.index(
   { VerificationAccountExpiredAt: 1 },
-  { expireAfterSeconds: 0 },
+  {
+    expireAfterSeconds: 0,
+    partialFilterExpression: {
+      VerificationAccountExpiredAt: { $exists: true, $type: "date" },
+    },
+  },
 );
 
 userSchema

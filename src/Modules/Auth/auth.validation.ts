@@ -82,7 +82,7 @@ export const resetPasswordSchema = {
 
 export const updatedPasswordSchema = {
   body: z
-  .strictObject({
+    .strictObject({
       oldPassword: generalFields.password,
       password: generalFields.password,
       confirmPassword: generalFields.password,
@@ -96,4 +96,11 @@ export const updatedPasswordSchema = {
         });
       }
     }),
+};
+
+export const verifyTwoAuthFactorSchema = {
+  body: z.strictObject({
+    email: generalFields.email,
+    otp: generalFields.otp,
+  }),
 };
