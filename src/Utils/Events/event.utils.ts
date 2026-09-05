@@ -9,6 +9,8 @@ import { passwordChangedAlertTemplate } from "../Email/Templates/resetPassword.e
 import { updatePasswordAlertTemplate } from "../Email/Templates/updatePassword.email.utils";
 import { enable2faTemplate } from "../Email/Templates/twoAuthFactor.email.utils";
 import { twoAuthFactorConfirmTemplate } from "../Email/Templates/twoAuthFactorLogin.utils";
+import { deleteAccountRequestTemplate } from "../Email/Templates/deleteAccountRequest.email";
+import { accountDeletedSuccessTemplate } from "../Email/Templates/accountDeleted.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -122,5 +124,32 @@ eventEmitter.on("twoAuthFactorAuthConfirm", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Two Auth Factor Confirmation Email ❌");
+  }
+});
+
+eventEmitter.on("deleteAccountRequest", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.DELETE_ACCOUNT_REQUEST;
+    data.html = deleteAccountRequestTemplate(
+      data.code,
+      data.firstName,
+      SubjectEnum.DELETE_ACCOUNT_REQUEST,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Delete Account Request Email ❌");
+  }
+});
+
+eventEmitter.on("deleteAccount", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.DELETE_ACCOUNT_ALERT;
+    data.html = accountDeletedSuccessTemplate(
+      data.firstName,
+      SubjectEnum.DELETE_ACCOUNT_ALERT,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Delete Account Request Email ❌");
   }
 });

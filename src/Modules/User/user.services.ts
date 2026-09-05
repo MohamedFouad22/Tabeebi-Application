@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import {
+  deleteAccountDTO,
   editProfileDTO,
   enableTwoAuthFactorDTO,
   freezeAccountDTO,
@@ -190,6 +191,59 @@ export class userServices {
     return res
       .status(200)
       .json({ message: "Two Auth Factor Enabled Successfully" });
+  };
+
+  deleteAccountReq = async (req: Request, res: Response): Promise<Response> => {
+    const otp = await generateOtp();
+
+    await this._userModel.updateOne({
+      filter: { email: req.user.email },
+      update: {
+        OTPVerificationCode: await hashData(otp.toString()),
+        OTPExpiredAt: new Date(Date.now() + 5 * 60 * 1000),
+        $inc: { __v: 1 },
+      },
+    });
+
+    eventEmitter.emit("deleteAccountRequest", {
+      to: req.user.email,
+      code: otp,
+      firstName: req.user.userName,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "The Account Deletion Request Was Successfully Sent" });
+  };
+
+  deleteAccount = async (req: Request, res: Response): Promise<Response> => {
+    const { otp }: deleteAccountDTO = req.body;
+
+    const user = await this._userModel.findOne({
+      filter: {
+        email: req.user.email,
+        OTPExpiredAt: { $exists: true },
+        OTPVerificationCode: { $exists: true },
+      },
+    });
+    if (!user) throw new NotFoundException("User Not Found Or Missing Data");
+
+    if (new Date(Date.now()) > user.OTPExpiredAt) {
+      throw new BadRequestException("OTP Expired");
+    }
+
+    if (!(await compareData(otp, user.OTPVerificationCode))) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    await this._userModel.deleteOne({ filter: { email: req.user.email } });
+
+    eventEmitter.emit("deleteAccount", {
+      to: user.email,
+      firstName: user.userName,
+    });
+
+    return res.status(200).json({ message: "Account Deleted Successfully" });
   };
 }
 

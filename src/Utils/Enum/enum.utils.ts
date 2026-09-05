@@ -40,4 +40,6 @@ export enum SubjectEnum {
   UPDATE_PASSWORD_ALERT = "Your Password Has Been Updated",
   TWO_AUTH_FACTOR_REQUEST = "Please confirm The TWO Auth Factor Activation Request",
   TWO_AUTH_FACTOR_CONFIRM = "Please Confirm Your Account",
+  DELETE_ACCOUNT_REQUEST = "Please Confirm That You Want To Delete Your Account",
+  DELETE_ACCOUNT_ALERT = "Your Account Has Been Permanently Deleted",
 }

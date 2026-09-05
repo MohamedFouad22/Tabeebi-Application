@@ -5,6 +5,7 @@ import { authentication } from "../../Middleware/authentication.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
+  deleteAccountSchema,
   editProfileSchema,
   freezeAccountSchema,
   restoreAccountSchema,
@@ -66,6 +67,25 @@ router.patch(
     RoleEnum.DOCTOR,
   ]),
   userServices.enableTwoAuthFactor,
+);
+router.post(
+  "/delete-account-request",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.deleteAccountReq,
+);
+router.delete(
+  "/delete-account",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  validation(deleteAccountSchema),
+  userServices.deleteAccount,
 );
 
 export default router;
