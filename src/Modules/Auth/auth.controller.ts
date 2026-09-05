@@ -7,6 +7,7 @@ import {
   forgetPasswordSchema,
   loginSchema,
   loginWithGoogleSchema,
+  logoutSchema,
   resendOTPSchema,
   resetPasswordSchema,
   signupSchema,
@@ -53,5 +54,19 @@ router.post(
   validation(verifyTwoAuthFactorSchema),
   authServices.verifyTwoAuthFactor,
 );
-router.post("/login-with-google",validation(loginWithGoogleSchema) ,authServices.loginWithGoogle);
+router.post(
+  "/login-with-google",
+  validation(loginWithGoogleSchema),
+  authServices.loginWithGoogle,
+);
+router.post(
+  "/logout",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  validation(logoutSchema),
+  authServices.logout,
+);
 export default router;

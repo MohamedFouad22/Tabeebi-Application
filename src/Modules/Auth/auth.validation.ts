@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { generalFields } from "../../Middleware/generalFields.utils";
+import { LogoutEnum } from "../../Utils/Enum/enum.utils";
 
 export const signupSchema = {
   body: z
@@ -108,5 +109,11 @@ export const verifyTwoAuthFactorSchema = {
 export const loginWithGoogleSchema = {
   body: z.strictObject({
     idToken: z.string(),
+  }),
+};
+
+export const logoutSchema = {
+  body: z.strictObject({
+    flag: z.enum(LogoutEnum).default(LogoutEnum.ONLY),
   }),
 };

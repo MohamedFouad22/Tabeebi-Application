@@ -16,10 +16,13 @@ import {
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { HUserDocument, userModel } from "../../DB/Models/user.model";
 import {
+  BadRequestException,
   NotFoundException,
   UnauthorizedException,
 } from "../Security/Error/global.error.utils";
 import { v4 as uuid } from "uuid";
+import { TokenRepository } from "../../DB/Repositories/token.repository";
+import { tokenModel } from "../../DB/Models/token.model";
 
 interface ITokenPayload extends JwtPayload {
   _id: string;
@@ -144,6 +147,7 @@ export const decodedToken = async ({
   tokenType: TokenTypeEnum;
 }) => {
   const _userModel = new UserRepository(userModel);
+  const _tokenModel = new TokenRepository(tokenModel);
 
   const [bearer, token] = authorization.split(" ");
   if (!bearer || !token) {
@@ -169,5 +173,35 @@ export const decodedToken = async ({
   });
   if (!user) throw new NotFoundException("User Not Found");
 
+  const checkToken = await _tokenModel.findOne({
+    filter: { jwtId: decoded.jti },
+  });
+  if (checkToken) throw new BadRequestException("Token Already Revoked");
+
+  if (
+    !decoded.iat ||
+    (user.changeCredientialsTime?.getTime() as number) > decoded.iat * 1000
+  ) {
+    throw new BadRequestException("Token Revoked");
+  }
+
   return { user, decoded };
+};
+
+export const revokedToken = async (decoded: JwtPayload) => {
+  const _tokenModel = new TokenRepository(tokenModel);
+
+  const [token] =
+    (await _tokenModel.create({
+      data: [
+        {
+          jwtId: decoded.jti,
+          expiredAt: new Date(Date.now() + 10 * 60 * 1000),
+          userId: decoded._id,
+        },
+      ],
+    })) || [];
+  if (!token) throw new BadRequestException("Failed To Revoked Token");
+
+  return token;
 };

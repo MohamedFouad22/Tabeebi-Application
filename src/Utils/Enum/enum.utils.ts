@@ -31,6 +31,11 @@ export enum TokenTypeEnum {
   REFRESH = "REFRESH",
 }
 
+export enum LogoutEnum {
+  ONLY = "ONLY",
+  ALL = "ALL",
+}
+
 export enum SubjectEnum {
   CONFIRM_EMAIL = "Please Confirm Your Email",
   WELCOME_EMAIL = "Welcome To The Tabeebi Application",

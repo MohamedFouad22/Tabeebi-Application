@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
-import { userModel } from "../../DB/Models/user.model";
+import { IUser, userModel } from "../../DB/Models/user.model";
 import {
   confirmEmailDTO,
   forgetPasswordDTO,
   loginDTO,
   loginWithGoogleDTO,
+  logoutDTO,
   resendOTPDTO,
   resetPasswordDTO,
   signupDTO,
@@ -21,14 +22,26 @@ import {
 import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
-import { createLoginCredentials } from "../../Utils/Tokens/token.utils";
+import {
+  createLoginCredentials,
+  revokedToken,
+} from "../../Utils/Tokens/token.utils";
 import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
-import { ProviderEnum, TwoAuthFactorEnum } from "../../Utils/Enum/enum.utils";
+import {
+  LogoutEnum,
+  ProviderEnum,
+  TwoAuthFactorEnum,
+} from "../../Utils/Enum/enum.utils";
 import { OAuth2Client } from "google-auth-library";
+import { tokenModel } from "../../DB/Models/token.model";
+import { TokenRepository } from "../../DB/Repositories/token.repository";
+import { UpdateQuery } from "mongoose";
+import { JwtPayload } from "jsonwebtoken";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
 
 class AuthenticationServices {
   private _userModel = new UserRepository(userModel);
+  private _tokenModel = new TokenRepository(tokenModel);
   constructor() {}
 
   signup = async (req: Request, res: Response): Promise<Response> => {
@@ -420,6 +433,36 @@ class AuthenticationServices {
     return res
       .status(200)
       .json({ message: "Login Successfully", crendiantles });
+  };
+
+  logout = async (req: Request, res: Response): Promise<Response> => {
+    const { flag }: logoutDTO = req.body;
+
+    let status = 200;
+    const update: UpdateQuery<IUser> = {};
+
+    switch (flag) {
+      case LogoutEnum.ONLY:
+        await revokedToken(req.decoded as JwtPayload);
+        break;
+
+      case LogoutEnum.ALL:
+        update.changeCredientialsTime = new Date();
+
+        await this._userModel.updateOne({
+          filter: {
+            email: req.user.email,
+          },
+          update,
+        });
+
+        break;
+
+      default:
+        break;
+    }
+
+    return res.status(status).json({ message: "Logout Successfully" });
   };
 }
 export default new AuthenticationServices();

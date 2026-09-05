@@ -33,5 +33,15 @@ export const tokenSchema = new Schema<IToken>(
   },
 );
 
+tokenSchema.index(
+  { expiredAt: 1 },
+  {
+    expireAfterSeconds: 0,
+    partialFilterExpression: {
+      expireAfterSeconds: { $exists: true, $type: "date" },
+    },
+  },
+);
+
 export const tokenModel = model("Token", tokenSchema) || models.Token;
 export type HTokenDocument = HydratedDocument<IToken>;
