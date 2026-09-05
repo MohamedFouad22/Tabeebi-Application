@@ -24,7 +24,9 @@ import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import {
   createLoginCredentials,
+  generateToken,
   revokedToken,
+  verifyToken,
 } from "../../Utils/Tokens/token.utils";
 import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
 import {
@@ -37,6 +39,7 @@ import { tokenModel } from "../../DB/Models/token.model";
 import { TokenRepository } from "../../DB/Repositories/token.repository";
 import { UpdateQuery } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
+import { v4 as uuid } from "uuid";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
 
 class AuthenticationServices {
@@ -430,6 +433,8 @@ class AuthenticationServices {
 
     const crendiantles = await createLoginCredentials(user);
 
+    eventEmitter.emit("welcome", { to: user.email, firstName: user.userName });
+
     return res
       .status(200)
       .json({ message: "Login Successfully", crendiantles });
@@ -463,6 +468,55 @@ class AuthenticationServices {
     }
 
     return res.status(status).json({ message: "Logout Successfully" });
+  };
+
+  refreshToken = async (req: Request, res: Response): Promise<Response> => {
+    const { authorization } = req.headers;
+
+    if (!authorization) {
+      throw new BadRequestException("Missing Headers");
+    }
+
+    const parts = authorization.split(" ");
+    if (parts.length !== 2) {
+      throw new BadRequestException(
+        "Invalid Authorization Header Format. Expected format: 'ROLE TOKEN'",
+      );
+    }
+
+    const [role, refreshToken] = parts;
+
+    const secretKey = process.env.REFRESH_TOKEN_SECRET_KEY;
+    if (!secretKey) {
+      throw new BadRequestException("REFRESH_TOKEN_SECRET_KEY is missing");
+    }
+
+    const decoded = (await verifyToken({
+      token: refreshToken as string,
+      secretOrPublicKey: secretKey,
+    })) as JwtPayload;
+
+    if (!decoded?.email) {
+      throw new BadRequestException("Invalid Token Payload");
+    }
+
+    const user = await this._userModel.findOne({
+      filter: { email: decoded.email },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User Not Found");
+    }
+
+    if (user.role && user.role !== role) {
+      throw new UnauthorizedException("Unauthorized Role Access");
+    }
+
+    const credentials = (await createLoginCredentials(user)).accessToken;
+
+    return res
+      .status(200)
+      .json({ message: "Token Refreshed Successfully", credentials });
   };
 }
 export default new AuthenticationServices();

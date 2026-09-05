@@ -69,4 +69,5 @@ router.post(
   validation(logoutSchema),
   authServices.logout,
 );
+router.post("/refresh-token", authServices.refreshToken);
 export default router;
