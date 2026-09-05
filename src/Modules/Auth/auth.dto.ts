@@ -3,6 +3,7 @@ import {
   confirmEmailSchema,
   forgetPasswordSchema,
   loginSchema,
+  loginWithGoogleSchema,
   resendOTPSchema,
   resetPasswordSchema,
   signupSchema,
@@ -20,3 +21,4 @@ export type updatedPasswordDTO = z.infer<typeof updatedPasswordSchema.body>;
 export type verifyTwoAuthFactorDTO = z.infer<
   typeof verifyTwoAuthFactorSchema.body
 >;
+export type loginWithGoogleDTO = z.infer<typeof loginWithGoogleSchema.body>;

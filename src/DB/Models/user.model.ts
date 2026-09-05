@@ -16,6 +16,7 @@ export interface IUser {
   phone: string;
   password: string;
   OTPVerificationCode: string;
+  googleId: string;
   TwoAuthFactorVerificationCode?: string;
   profileImage: string;
   coverImages: string[];
@@ -67,17 +68,24 @@ export const userSchema = new Schema<IUser>(
     },
     phone: {
       type: String,
-      required: true,
+      unique: true,
+      required: function (this: HUserDocument) {
+        return this.provider === ProviderEnum.SYSTEM ? true : false;
+      },
     },
     password: {
       type: String,
       minLength: 8,
-      required: true,
+      required: function (this: HUserDocument) {
+        return this.provider === ProviderEnum.SYSTEM ? true : false;
+      },
     },
     age: {
       type: Number,
-      minLength: 18,
-      required: true,
+      min: [18, "Age must be at least 18"],
+      required: function (this: HUserDocument) {
+        return this.provider === ProviderEnum.SYSTEM ? true : false;
+      },
     },
     OTPVerificationCode: String,
     TwoAuthFactorVerificationCode: String,
@@ -114,6 +122,13 @@ export const userSchema = new Schema<IUser>(
         message: "This Value Not Found",
       },
       default: RoleEnum.USER,
+    },
+    googleId: {
+      type: String,
+      default: null,
+      required: function (this: HUserDocument) {
+        return this.provider === ProviderEnum.GOOGLE ? true : false;
+      },
     },
     VerificationAccountExpiredAt: Date,
     changeCredientialsTime: Date,

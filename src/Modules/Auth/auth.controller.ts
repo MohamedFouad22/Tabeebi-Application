@@ -6,6 +6,7 @@ import {
   confirmEmailSchema,
   forgetPasswordSchema,
   loginSchema,
+  loginWithGoogleSchema,
   resendOTPSchema,
   resetPasswordSchema,
   signupSchema,
@@ -52,4 +53,5 @@ router.post(
   validation(verifyTwoAuthFactorSchema),
   authServices.verifyTwoAuthFactor,
 );
+router.post("/login-with-google",validation(loginWithGoogleSchema) ,authServices.loginWithGoogle);
 export default router;

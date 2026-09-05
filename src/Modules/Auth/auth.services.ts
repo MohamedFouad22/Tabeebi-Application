@@ -4,6 +4,7 @@ import {
   confirmEmailDTO,
   forgetPasswordDTO,
   loginDTO,
+  loginWithGoogleDTO,
   resendOTPDTO,
   resetPasswordDTO,
   signupDTO,
@@ -22,7 +23,9 @@ import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { createLoginCredentials } from "../../Utils/Tokens/token.utils";
 import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
-import { TwoAuthFactorEnum } from "../../Utils/Enum/enum.utils";
+import { ProviderEnum, TwoAuthFactorEnum } from "../../Utils/Enum/enum.utils";
+import { OAuth2Client } from "google-auth-library";
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
 
 class AuthenticationServices {
   private _userModel = new UserRepository(userModel);
@@ -368,6 +371,55 @@ class AuthenticationServices {
     });
 
     return res.status(200).json({ message: "Password Updated Successfully" });
+  };
+
+  async verifyIdToken(idToken: string) {
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: idToken,
+        audience: process.env.GOOGLE_CLIENT_ID || "",
+      });
+      const payload = ticket.getPayload();
+      return payload;
+    } catch (error) {
+      throw new BadRequestException("Failed To Fetch");
+    }
+  }
+
+  loginWithGoogle = async (req: Request, res: Response): Promise<Response> => {
+    const { idToken }: loginWithGoogleDTO = req.body;
+
+    const userPayload = await this.verifyIdToken(idToken);
+    const email = userPayload?.email;
+    if (!userPayload || !userPayload.email) {
+      throw new BadRequestException("Invalid Google Account Payload");
+    }
+    let user = await this._userModel.findOne({ filter: { email } });
+
+    if (!user) {
+      const [newUser] = await this._userModel.create({
+        data: [
+          {
+            email,
+            firstName: userPayload?.given_name,
+            lastName: userPayload?.family_name,
+            provider: ProviderEnum.GOOGLE,
+            profileImage: userPayload?.picture,
+            googleId: userPayload?.sub,
+            confirmedAt: new Date(Date.now()),
+          },
+        ],
+      });
+
+      user = Array.isArray(newUser) ? newUser[0] : newUser;
+    }
+    if (!user) throw new BadRequestException("Failed To Create User");
+
+    const crendiantles = await createLoginCredentials(user);
+
+    return res
+      .status(200)
+      .json({ message: "Login Successfully", crendiantles });
   };
 }
 export default new AuthenticationServices();

@@ -104,3 +104,9 @@ export const verifyTwoAuthFactorSchema = {
     otp: generalFields.otp,
   }),
 };
+
+export const loginWithGoogleSchema = {
+  body: z.strictObject({
+    idToken: z.string(),
+  }),
+};
