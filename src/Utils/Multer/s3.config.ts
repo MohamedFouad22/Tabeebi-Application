@@ -1,6 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
-const s3Config = () => {
+export const s3Config = () => {
   return new S3Client({
     region: process.env.AWS_REGION as string,
     credentials: {

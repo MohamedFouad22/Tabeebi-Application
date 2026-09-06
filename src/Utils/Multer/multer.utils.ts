@@ -16,14 +16,14 @@ export const fileValidation = {
   ],
 };
 
-export const uploadFile = async ({
-  fileValidation = [],
-  maxSize = 2,
+export const cloudFileValidtion = ({
   storageApproach,
+  maxSize = 2,
+  validation = [],
 }: {
-  fileValidation: string[];
-  maxSize: number;
   storageApproach: storageTypeEnum;
+  maxSize: number;
+  validation: string[];
 }) => {
   const storage =
     storageApproach === storageTypeEnum.MEMORY
@@ -42,7 +42,7 @@ export const uploadFile = async ({
     file: Express.Multer.File,
     cb: FileFilterCallback,
   ) => {
-    if (!fileValidation.length || !fileValidation.includes(file.mimetype)) {
+    if (!validation.length || !validation.includes(file.mimetype)) {
       throw new BadRequestException("File Filter Validation Error");
     }
     return cb(null, true);

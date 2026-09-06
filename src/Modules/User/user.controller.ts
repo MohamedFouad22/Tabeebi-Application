@@ -2,7 +2,11 @@ import { Router } from "express";
 const router: Router = Router();
 import userServices from "./user.services";
 import { authentication } from "../../Middleware/authentication.middleware";
-import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
+import {
+  RoleEnum,
+  storageTypeEnum,
+  TokenTypeEnum,
+} from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
   deleteAccountSchema,
@@ -10,6 +14,10 @@ import {
   freezeAccountSchema,
   restoreAccountSchema,
 } from "./user.validation";
+import {
+  cloudFileValidtion,
+  fileValidation,
+} from "../../Utils/Multer/multer.utils";
 
 router.get(
   "/get-profile",
@@ -86,6 +94,34 @@ router.delete(
   ]),
   validation(deleteAccountSchema),
   userServices.deleteAccount,
+);
+router.post(
+  "/profile-image",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.DOCTOR,
+    RoleEnum.ADMIN,
+  ]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 3,
+    validation: [...fileValidation.image],
+  }).single("profileImage"),
+  userServices.profileImage,
+);
+router.post(
+  "/cover-images",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.DOCTOR,
+    RoleEnum.ADMIN,
+  ]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 15,
+    validation: [...fileValidation.image],
+  }).array("coverImages", 5),
+  userServices.coverImages,
 );
 
 export default router;

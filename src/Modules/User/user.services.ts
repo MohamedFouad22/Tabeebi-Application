@@ -18,6 +18,7 @@ import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
+import { uploadFile, uploadFiles } from "../../Utils/Multer/aws.services.utils";
 
 export class userServices {
   private _userModel = new UserRepository(userModel);
@@ -244,6 +245,43 @@ export class userServices {
     });
 
     return res.status(200).json({ message: "Account Deleted Successfully" });
+  };
+
+  profileImage = async (req: Request, res: Response): Promise<Response> => {
+    const key = await uploadFile({
+      path: `Users/Profile Image/${req.decoded._id}`,
+      file: req.file as Express.Multer.File,
+    });
+
+    await this._userModel.updateOne({
+      filter: { email: req.decoded.email },
+      update: {
+        profileImage: key,
+        $inc: { __v: 1 },
+      },
+    });
+
+    return res.status(200).json({
+      message: "Profile Image Uploaded Successfully",
+      profileImage: { key },
+    });
+  };
+
+  coverImages = async (req: Request, res: Response): Promise<Response> => {
+    const urls = await uploadFiles({
+      path: `Users/Cover Images/${req.decoded._id}`,
+      files: req.files as Express.Multer.File[],
+    });
+
+    await this._userModel.updateOne({
+      filter: { email: req.user.email },
+      update: { coverImages: urls, $inc: { __v: 1 } },
+    });
+
+    return res.status(200).json({
+      message: "Cover Images Uploaded Successfully",
+      coverImages: urls,
+    });
   };
 }
 
