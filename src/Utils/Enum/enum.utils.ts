@@ -36,6 +36,11 @@ export enum LogoutEnum {
   ALL = "ALL",
 }
 
+export enum storageTypeEnum {
+  MEMORY = "MEMORY",
+  DISK = "DISK",
+}
+
 export enum SubjectEnum {
   CONFIRM_EMAIL = "Please Confirm Your Email",
   WELCOME_EMAIL = "Welcome To The Tabeebi Application",
