@@ -96,6 +96,15 @@ router.delete(
   userServices.deleteAccount,
 );
 router.post(
+  "/invite-user",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.inviteUser,
+);
+router.post(
   "/profile-image",
   authentication(TokenTypeEnum.ACCESS, [
     RoleEnum.USER,

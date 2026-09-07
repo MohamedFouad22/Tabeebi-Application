@@ -6,11 +6,13 @@ import {
   editProfileDTO,
   enableTwoAuthFactorDTO,
   freezeAccountDTO,
+  inviteUserDTO,
   restoreAccountDTO,
 } from "./user.dto";
 import { RoleEnum, TwoAuthFactorEnum } from "../../Utils/Enum/enum.utils";
 import {
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
 } from "../../Utils/Security/Error/global.error.utils";
@@ -250,6 +252,24 @@ export class userServices {
     });
 
     return res.status(200).json({ message: "Account Deleted Successfully" });
+  };
+
+  inviteUser = async (req: Request, res: Response): Promise<Response> => {
+    const { email }: inviteUserDTO = req.body;
+
+    const user = await this._userModel.findOne({
+      filter: { email },
+    });
+    if (user)
+      throw new ConflictException("User Alraedy Use Tabebbi Application");
+
+    eventEmitter.emit("inviteUser", {
+      to: email,
+      inviterName: req.user.userName,
+      inviteLink: process.env.APPLICATION_URL as string,
+    });
+
+    return res.status(200).json({ message: "Invited User Sent Successfully" });
   };
 
   profileImage = async (req: Request, res: Response): Promise<Response> => {

@@ -34,3 +34,9 @@ export const deleteAccountSchema = {
     otp: generalFields.otp,
   }),
 };
+
+export const inviteUserSchema = {
+  body: z.strictObject({
+    email: generalFields.email,
+  }),
+};

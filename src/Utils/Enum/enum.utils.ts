@@ -52,4 +52,5 @@ export enum SubjectEnum {
   TWO_AUTH_FACTOR_CONFIRM = "Please Confirm Your Account",
   DELETE_ACCOUNT_REQUEST = "Please Confirm That You Want To Delete Your Account",
   DELETE_ACCOUNT_ALERT = "Your Account Has Been Permanently Deleted",
+  INVITE_USER_EMAIL = "Invitation To Try Tabebbi Application",
 }

@@ -4,6 +4,7 @@ import {
   editProfileSchema,
   enableTwoAuthFactorSchema,
   freezeAccountSchema,
+  inviteUserSchema,
   restoreAccountSchema,
 } from "./user.validation";
 
@@ -14,3 +15,4 @@ export type enableTwoAuthFactorDTO = z.infer<
   typeof enableTwoAuthFactorSchema.body
 >;
 export type deleteAccountDTO = z.infer<typeof deleteAccountSchema.body>;
+export type inviteUserDTO = z.infer<typeof inviteUserSchema.body>;

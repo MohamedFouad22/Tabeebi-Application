@@ -11,6 +11,7 @@ import { enable2faTemplate } from "../Email/Templates/twoAuthFactor.email.utils"
 import { twoAuthFactorConfirmTemplate } from "../Email/Templates/twoAuthFactorLogin.utils";
 import { deleteAccountRequestTemplate } from "../Email/Templates/deleteAccountRequest.email";
 import { accountDeletedSuccessTemplate } from "../Email/Templates/accountDeleted.email";
+import { inviteUserTemplate } from "../Email/Templates/inviteUser.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -18,6 +19,8 @@ export interface IEmail extends Mail.Options {
   code: number;
   firstName: string;
   tempToken?: string;
+  inviterName?: string;
+  inviteLink?: string;
 }
 
 eventEmitter.on("confirmEmail", async (data: IEmail) => {
@@ -151,5 +154,19 @@ eventEmitter.on("deleteAccount", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Delete Account Request Email ❌");
+  }
+});
+
+eventEmitter.on("inviteUser", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.INVITE_USER_EMAIL;
+    data.html = inviteUserTemplate(
+      data.inviterName as string,
+      data.inviteLink as string,
+      SubjectEnum.INVITE_USER_EMAIL,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Invite User Email ❌");
   }
 });
