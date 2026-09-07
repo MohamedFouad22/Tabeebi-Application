@@ -123,5 +123,33 @@ router.post(
   }).array("coverImages", 5),
   userServices.coverImages,
 );
+router.post(
+  "/upload-large-file",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 20,
+    validation: [
+      ...fileValidation.image,
+      ...fileValidation.documents,
+      ...fileValidation.video,
+      ...fileValidation.audio,
+    ],
+  }).array("largeFiles", 10),
+  userServices.uploadLargeFile,
+);
+router.delete(
+  "/delete-file",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.deleteFile,
+);
 
 export default router;

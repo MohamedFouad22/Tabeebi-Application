@@ -18,7 +18,12 @@ import { encryption } from "../../Utils/Security/Encryption/encryption.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
-import { uploadFile, uploadFiles } from "../../Utils/Multer/aws.services.utils";
+import {
+  deleteFile,
+  uploadFile,
+  uploadFiles,
+  uploadLargeFiles,
+} from "../../Utils/Multer/aws.services.utils";
 
 export class userServices {
   private _userModel = new UserRepository(userModel);
@@ -275,13 +280,41 @@ export class userServices {
 
     await this._userModel.updateOne({
       filter: { email: req.user.email },
-      update: { coverImages: urls, $inc: { __v: 1 } },
+      update: { $push: { coverImages: urls }, $inc: { __v: 1 } },
     });
 
     return res.status(200).json({
       message: "Cover Images Uploaded Successfully",
       coverImages: urls,
     });
+  };
+
+  uploadLargeFile = async (req: Request, res: Response): Promise<Response> => {
+    const keys = await uploadLargeFiles({
+      path: `Users/Large Files/${req.decoded._id}`,
+      files: req.files as Express.Multer.File[],
+    });
+
+    await this._userModel.updateOne({
+      filter: { email: req.decoded.email },
+      update: { $push: { largeFiles: { $each: keys } }, $inc: { __v: 1 } },
+    });
+
+    return res
+      .status(200)
+      .json({ messsage: "Files Uploaded Successfully", LargeFiles: keys });
+  };
+
+  deleteFile = async (req: Request, res: Response): Promise<Response> => {
+    const { key } = req.query as unknown as { key: string };
+
+    const data = await deleteFile({
+      Key: key as string,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "File Deleted Successfully", result: data });
   };
 }
 

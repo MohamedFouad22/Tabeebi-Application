@@ -14,6 +14,7 @@ export const fileValidation = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/pdf",
   ],
+  audio: ["audio/mp4", "audio/aiff", "audio/mpeg"],
 };
 
 export const cloudFileValidtion = ({

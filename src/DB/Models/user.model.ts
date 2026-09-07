@@ -20,6 +20,7 @@ export interface IUser {
   TwoAuthFactorVerificationCode?: string;
   profileImage: string;
   coverImages: string[];
+  largeFiles: string[];
 
   age: number;
 
@@ -90,6 +91,7 @@ export const userSchema = new Schema<IUser>(
     OTPVerificationCode: String,
     TwoAuthFactorVerificationCode: String,
     profileImage: String,
+    largeFiles: [String],
     coverImages: [String],
     twoFactorAuthStatus: {
       type: String,
