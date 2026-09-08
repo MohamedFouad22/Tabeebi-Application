@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   ObjectCannedACL,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
@@ -118,4 +119,23 @@ export const deleteFile = async ({
   });
 
   return await s3Config().send(command);
+};
+
+export const deleteFiles = async ({
+  Bucket = process.env.AWS_BUCKET_NAME as string,
+  urls = [],
+}: {
+  Bucket?: string;
+  urls: string[];
+}) => {
+  const Objects = urls.map((url) => {
+    return { Key: url };
+  });
+
+  const result = new DeleteObjectsCommand({
+    Bucket,
+    Delete: { Objects },
+  });
+
+  return await s3Config().send(result);
 };

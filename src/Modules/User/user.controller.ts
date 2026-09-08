@@ -178,5 +178,14 @@ router.delete(
   ]),
   userServices.deleteFile,
 );
+router.delete(
+  "/delete-files",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.deleteFiles,
+);
 
 export default router;

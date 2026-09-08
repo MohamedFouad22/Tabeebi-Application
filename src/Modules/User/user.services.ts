@@ -22,6 +22,7 @@ import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
 import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import {
   deleteFile,
+  deleteFiles,
   uploadFile,
   uploadFiles,
   uploadLargeFiles,
@@ -386,6 +387,18 @@ export class userServices {
     return res
       .status(200)
       .json({ message: "File Deleted Successfully", result: data });
+  };
+
+  deleteFiles = async (req: Request, res: Response): Promise<Response> => {
+    const { keys } = req.body;
+
+    const result = await deleteFiles({
+      urls: keys,
+    });
+
+    if (!result) throw new BadRequestException("Failed To Delete Files");
+
+    return res.status(200).json({ message: "Files Deleted Successfully" });
   };
 }
 
