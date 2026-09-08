@@ -12,6 +12,7 @@ export interface IUser {
   firstName: string;
   lastName: string;
   userName?: string;
+  slug: string;
   email: string;
   phone: string;
   password: string;
@@ -59,6 +60,10 @@ export const userSchema = new Schema<IUser>(
       minLength: 3,
       maxLength: 25,
       required: true,
+    },
+    slug: {
+      type: String,
+      unique: true,
     },
     email: {
       type: String,
@@ -170,6 +175,19 @@ userSchema
   .get(function () {
     return `${this.firstName} ${this.lastName}`;
   });
+
+userSchema.pre("save", async function (this: HUserDocument) {
+  if (
+    this.isNew ||
+    this.isModified("firstName") ||
+    this.isModified("lastName")
+  ) {
+    const fName = this.firstName.replaceAll(" ", "").toLowerCase();
+    const lName = this.lastName.replaceAll(" ", "").toLowerCase();
+
+    this.slug = `@${fName}-${lName}${Date.now().toString().substring(8, 13)}`;
+  }
+});
 
 export const userModel = model("User", userSchema) || models.User;
 export type HUserDocument = HydratedDocument<IUser>;

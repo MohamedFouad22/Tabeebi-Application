@@ -104,6 +104,24 @@ router.post(
   ]),
   userServices.inviteUser,
 );
+router.get(
+  "/search-user",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.searchUser,
+);
+router.patch(
+  "/edit-slug",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+  ]),
+  userServices.editSlug,
+);
 router.post(
   "/profile-image",
   authentication(TokenTypeEnum.ACCESS, [

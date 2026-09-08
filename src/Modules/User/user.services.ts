@@ -272,6 +272,57 @@ export class userServices {
     return res.status(200).json({ message: "Invited User Sent Successfully" });
   };
 
+  searchUser = async (req: Request, res: Response): Promise<Response> => {
+    const { slug } = req.query as unknown as { slug: string };
+
+    const user = await this._userModel.findOne({
+      filter: { slug },
+      projection: "firstName lastName userName email _id",
+    });
+    if (!user) throw new NotFoundException("User Not Found");
+
+    return res.status(200).json({ message: "User Found Successfully", user });
+  };
+
+  editSlug = async (req: Request, res: Response): Promise<Response> => {
+    const { slug } = req.body as { slug: string };
+
+    const cleanSlug = slug?.trim().toLowerCase().replaceAll(" ", "");
+
+    if (
+      !cleanSlug ||
+      cleanSlug.startsWith("@") ||
+      !/^[a-z0-9-]+$/.test(cleanSlug)
+    ) {
+      throw new BadRequestException(
+        "Invalid Slug Format. Use letters, Numbers, And Hyphens Only",
+      );
+    }
+
+    const formattedSlug = `@${cleanSlug}`;
+
+    const existingUser = await this._userModel.findOne({
+      filter: { slug: formattedSlug },
+    });
+
+    if (existingUser && existingUser.email !== req.user.email) {
+      throw new ConflictException("Slug Is Already Taken By Another User");
+    }
+
+    await this._userModel.updateOne({
+      filter: { email: req.user.email },
+      update: {
+        slug: formattedSlug,
+        $inc: { __v: 1 },
+      },
+    });
+
+    return res.status(200).json({
+      message: "Slug Updated Successfully",
+      slug: formattedSlug,
+    });
+  };
+
   profileImage = async (req: Request, res: Response): Promise<Response> => {
     const key = await uploadFile({
       path: `Users/Profile Image/${req.decoded._id}`,
