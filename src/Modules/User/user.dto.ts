@@ -1,5 +1,6 @@
 import * as z from "zod";
 import {
+  contactUsSchema,
   deleteAccountSchema,
   editProfileSchema,
   enableTwoAuthFactorSchema,
@@ -16,3 +17,4 @@ export type enableTwoAuthFactorDTO = z.infer<
 >;
 export type deleteAccountDTO = z.infer<typeof deleteAccountSchema.body>;
 export type inviteUserDTO = z.infer<typeof inviteUserSchema.body>;
+export type contactUsDTO = z.infer<typeof contactUsSchema.body>;

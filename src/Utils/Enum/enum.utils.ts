@@ -53,4 +53,6 @@ export enum SubjectEnum {
   DELETE_ACCOUNT_REQUEST = "Please Confirm That You Want To Delete Your Account",
   DELETE_ACCOUNT_ALERT = "Your Account Has Been Permanently Deleted",
   INVITE_USER_EMAIL = "Invitation To Try Tabebbi Application",
+  CONTACT_US_EMAIL = "Requesting Assistance From a Client",
+  CONTACT_US_USER_EMAIL = "We Received Your Message",
 }

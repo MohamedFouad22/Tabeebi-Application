@@ -9,6 +9,7 @@ import {
 } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
+  contactUsSchema,
   deleteAccountSchema,
   editProfileSchema,
   freezeAccountSchema,
@@ -186,6 +187,16 @@ router.delete(
     RoleEnum.DOCTOR,
   ]),
   userServices.deleteFiles,
+);
+router.post(
+  "/contact-us",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.USER,
+    RoleEnum.DOCTOR,
+    RoleEnum.ADMIN,
+  ]),
+  validation(contactUsSchema),
+  userServices.contactUs,
 );
 
 export default router;

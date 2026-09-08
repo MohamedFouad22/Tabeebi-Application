@@ -10,7 +10,7 @@ import { Types } from "mongoose";
 export const generalFields = {
   firstName: z.string().trim().min(3).max(25),
   lastName: z.string().trim().min(3).max(25),
-  userName: z.string().trim().min(3).max(25).optional(),
+  userName: z.string().trim().min(3).max(25),
   email: z.email(),
   phone: z
     .string()

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import {
+  contactUsDTO,
   deleteAccountDTO,
   editProfileDTO,
   enableTwoAuthFactorDTO,
@@ -399,6 +400,22 @@ export class userServices {
     if (!result) throw new BadRequestException("Failed To Delete Files");
 
     return res.status(200).json({ message: "Files Deleted Successfully" });
+  };
+
+  contactUs = async (req: Request, res: Response): Promise<Response> => {
+    const { userName, email, phone, comment }: contactUsDTO = req.body;
+
+    eventEmitter.emit("contactUs", {
+      to: process.env.SMTP_USER as string,
+      userName,
+      email,
+      phone,
+      comment,
+    });
+
+    eventEmitter.emit("contactUsUser", { to: email, userName });
+
+    return res.status(200).json({ message: "Comment Sent Successfully" });
   };
 }
 

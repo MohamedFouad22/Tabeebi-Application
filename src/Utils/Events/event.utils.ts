@@ -12,6 +12,8 @@ import { twoAuthFactorConfirmTemplate } from "../Email/Templates/twoAuthFactorLo
 import { deleteAccountRequestTemplate } from "../Email/Templates/deleteAccountRequest.email";
 import { accountDeletedSuccessTemplate } from "../Email/Templates/accountDeleted.email";
 import { inviteUserTemplate } from "../Email/Templates/inviteUser.email";
+import { contactUsTemplate } from "../Email/Templates/contactUs.email";
+import { contactUsConfirmationTemplate } from "../Email/Templates/contactUsUser.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -21,6 +23,10 @@ export interface IEmail extends Mail.Options {
   tempToken?: string;
   inviterName?: string;
   inviteLink?: string;
+  userName?: string;
+  email?: string;
+  phone?: string;
+  comment?: string;
 }
 
 eventEmitter.on("confirmEmail", async (data: IEmail) => {
@@ -168,5 +174,34 @@ eventEmitter.on("inviteUser", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Invite User Email ❌");
+  }
+});
+
+eventEmitter.on("contactUs", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.CONTACT_US_EMAIL;
+    data.html = contactUsTemplate(
+      data.userName as string,
+      data.email as string,
+      data.phone as string,
+      data.comment as string,
+      SubjectEnum.CONTACT_US_EMAIL,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Contact US Email ❌");
+  }
+});
+
+eventEmitter.on("contactUsUser", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.CONTACT_US_USER_EMAIL;
+    data.html = contactUsConfirmationTemplate(
+      data.userName as string,
+      SubjectEnum.CONTACT_US_USER_EMAIL,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Contact US User Email ❌");
   }
 });

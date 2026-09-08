@@ -40,3 +40,15 @@ export const inviteUserSchema = {
     email: generalFields.email,
   }),
 };
+
+export const contactUsSchema = {
+  body: z.strictObject({
+    userName: generalFields.userName,
+    email: generalFields.email,
+    phone: generalFields.phone,
+    comment: z
+      .string()
+      .min(2, { message: "Comment Must Be At Least 2 Letters" })
+      .max(500, { message: "Comment Must Be At Most 500 Letters" }),
+  }),
+};
