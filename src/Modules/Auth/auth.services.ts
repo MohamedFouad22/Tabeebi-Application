@@ -24,7 +24,6 @@ import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import {
   createLoginCredentials,
-  generateToken,
   revokedToken,
   verifyToken,
 } from "../../Utils/Tokens/token.utils";
