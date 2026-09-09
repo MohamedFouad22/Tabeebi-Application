@@ -39,7 +39,6 @@ import { tokenModel } from "../../DB/Models/token.model";
 import { TokenRepository } from "../../DB/Repositories/token.repository";
 import { UpdateQuery } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
-import { v4 as uuid } from "uuid";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
 
 class AuthenticationServices {

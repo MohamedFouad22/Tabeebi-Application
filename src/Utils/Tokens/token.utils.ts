@@ -65,6 +65,9 @@ export const getSignatureLevel = async (role: RoleEnum = RoleEnum.USER) => {
     case RoleEnum.DOCTOR:
       signatureLevel = signatureLevelEnum.DOCTOR;
       break;
+    case RoleEnum.COMPANY:
+      signatureLevel = signatureLevelEnum.COMPANY;
+      break;
     default:
       break;
   }
@@ -93,6 +96,11 @@ export const getSignatures = async (
     case signatureLevelEnum.DOCTOR:
       signatures.accessToken = process.env
         .DOCTOR_ACCESS_TOKEN_SECRET_KEY as string;
+      signatures.refreshToken = process.env.REFRESH_TOKEN_SECRET_KEY as string;
+      break;
+    case signatureLevelEnum.COMPANY:
+      signatures.accessToken = process.env
+        .COMPANY_ACCESS_TOKEN_SECRET_KEY as string;
       signatures.refreshToken = process.env.REFRESH_TOKEN_SECRET_KEY as string;
       break;
 

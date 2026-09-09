@@ -10,6 +10,7 @@ import hpp from "hpp";
 import { globalError } from "./Utils/Security/Error/global.error.utils";
 import authRouter from "./Modules/Auth/auth.controller";
 import userRouter from "./Modules/User/user.controller";
+import brandRouter from "./Modules/Brand/brand.controller";
 dotenv.config({ path: `${path.resolve()}/config/.env.dev` });
 
 const limit = rateLimit({
@@ -29,6 +30,7 @@ export const bootstrap = async () => {
 
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/user", userRouter);
+  app.use("/api/v1/brand", brandRouter);
 
   app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({ message: "Hello From Tabeebi App" });

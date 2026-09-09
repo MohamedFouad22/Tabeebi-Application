@@ -26,6 +26,7 @@ router.get(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.getProfile,
 );
@@ -35,6 +36,7 @@ router.patch(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   validation(freezeAccountSchema),
   userServices.freezeAccount,
@@ -45,6 +47,7 @@ router.patch(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   validation(restoreAccountSchema),
   userServices.restoreAccount,
@@ -55,6 +58,7 @@ router.patch(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   validation(editProfileSchema),
   userServices.editProfile,
@@ -65,6 +69,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.twoAuthFactorRequest,
 );
@@ -74,6 +79,7 @@ router.patch(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.enableTwoAuthFactor,
 );
@@ -83,6 +89,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.deleteAccountReq,
 );
@@ -92,6 +99,7 @@ router.delete(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   validation(deleteAccountSchema),
   userServices.deleteAccount,
@@ -102,6 +110,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.inviteUser,
 );
@@ -111,6 +120,7 @@ router.get(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.searchUser,
 );
@@ -120,6 +130,7 @@ router.patch(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.editSlug,
 );
@@ -129,6 +140,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.DOCTOR,
     RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
   ]),
   cloudFileValidtion({
     storageApproach: storageTypeEnum.MEMORY,
@@ -143,6 +155,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.DOCTOR,
     RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
   ]),
   cloudFileValidtion({
     storageApproach: storageTypeEnum.MEMORY,
@@ -157,6 +170,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   cloudFileValidtion({
     storageApproach: storageTypeEnum.MEMORY,
@@ -176,6 +190,7 @@ router.delete(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.deleteFile,
 );
@@ -185,6 +200,7 @@ router.delete(
     RoleEnum.USER,
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
+    RoleEnum.COMPANY,
   ]),
   userServices.deleteFiles,
 );
@@ -194,6 +210,7 @@ router.post(
     RoleEnum.USER,
     RoleEnum.DOCTOR,
     RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
   ]),
   validation(contactUsSchema),
   userServices.contactUs,

@@ -18,12 +18,14 @@ export enum RoleEnum {
   USER = "USER",
   ADMIN = "ADMIN",
   DOCTOR = "DOCTOR",
+  COMPANY = "COMPANY",
 }
 
 export enum signatureLevelEnum {
   USER = "USER",
   ADMIN = "ADMIN",
   DOCTOR = "DOCTOR",
+  COMPANY = "COMPANY",
 }
 
 export enum TokenTypeEnum {
