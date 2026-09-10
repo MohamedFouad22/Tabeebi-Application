@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import * as z from "zod";
+import { ItemTypeEnum } from "../../Utils/Enum/enum.utils";
 
 export const createBrandSchema = {
   body: z.strictObject({
@@ -48,5 +49,43 @@ export const deleteBrandSchema = {
     brandId: z.string().refine((value) => {
       return Types.ObjectId.isValid(value);
     }),
+  }),
+};
+
+export const reteBrandSchema = {
+  params: z.strictObject({
+    brandId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z
+    .strictObject({
+      rate: z.number().min(0.5).max(5).optional(),
+      comment: z
+        .string()
+        .min(2, { message: "Comment Must Be At Least 2 Letters" })
+        .max(500, { message: "Comment Must Be At Most 500 Letters" })
+        .optional(),
+    })
+    .superRefine((value, ctx) => {
+      if (value.rate === undefined && value.comment === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["rate"],
+          message: "At least rate or comment must be provided",
+        });
+      }
+    }),
+};
+
+export const brandReviewsSchema = {
+  params: z.strictObject({
+    brandId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  query: z.strictObject({
+    page: z.coerce.number().min(1).default(1),
+    limit: z.coerce.number().min(1).max(50).default(10),
   }),
 };

@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import {
+  brandReviewsDTO,
+  brandReviewsQueryDTO,
   createBrandDTO,
   deleteBrandDTO,
   getSpecificBrandDTO,
+  rateBrandDTO,
+  rateBrandParamsDTO,
   updateBrandDTO,
   updateBrandParamsDTO,
 } from "./brand.dto";
@@ -15,10 +19,13 @@ import {
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
 import { Types } from "mongoose";
-import { RoleEnum } from "../../Utils/Enum/enum.utils";
+import { ItemTypeEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
+import { RateRepository } from "../../DB/Repositories/rate.repository";
+import { rateModel } from "../../DB/Models/rate.model";
 
 class BrandServices {
   private _brandModel = new BrandRepository(brandModel);
+  private _rateModel = new RateRepository(rateModel);
   constructor() {}
 
   createBrand = async (req: Request, res: Response): Promise<Response> => {
@@ -137,6 +144,90 @@ class BrandServices {
     await this._brandModel.deleteOne({ filter });
 
     return res.status(200).json({ message: "Brand Deleted Successfully" });
+  };
+
+  rateBrand = async (req: Request, res: Response): Promise<Response> => {
+    const { brandId } = req.params as rateBrandParamsDTO;
+    const { rate, comment }: rateBrandDTO = req.body;
+
+    const brand = await this._brandModel.findOne({ filter: { _id: brandId } });
+    if (!brand) throw new NotFoundException("Brand Not Found");
+
+    const checkRate = await this._rateModel.findOne({
+      filter: { item: brandId, userId: req.decoded._id },
+    });
+    if (!checkRate) {
+      await this._rateModel.create({
+        data: [
+          {
+            rate,
+            comment,
+            userId: req.decoded._id,
+            item: brandId,
+            itemType: ItemTypeEnum.BRAND,
+          },
+        ],
+      });
+
+      return res
+        .status(201)
+        .json({ message: "Brand evaluation created successfully" });
+    } else {
+      await this._rateModel.updateOne({
+        filter: { item: brandId, userId: req.decoded._id },
+        update: {
+          ...(rate !== undefined && { rate }),
+          ...(comment !== undefined && { comment }),
+          $inc: { __v: 1 },
+        },
+      });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "The Brand Has Been Successfully Evaluated" });
+  };
+
+  getBrandReviews = async (req: Request, res: Response): Promise<Response> => {
+    const { brandId } = req.params as brandReviewsDTO;
+    const { page, limit } = req.query as unknown as brandReviewsQueryDTO;
+
+    const skip = (page - 1) * limit;
+    const filter = { item: brandId, itemType: ItemTypeEnum.BRAND };
+    const [reviews, totalCount] = await Promise.all([
+      this._rateModel.find({
+        filter,
+        projection: "-updatedAt -itemType -__v",
+        options: {
+          sort: { createdAt: -1 },
+          skip,
+          limit,
+          populate: {
+            path: "userId",
+            select: "email userName",
+          },
+        },
+      }),
+      this._rateModel.countDocuments(filter),
+    ]);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    if (reviews.length < 1) {
+      return res
+        .status(200)
+        .json({ message: "Not Found Reviews", reviews: [] });
+    }
+
+    return res.status(200).json({
+      message: "Get Reviews Successfully",
+      metadata: {
+        totalCount,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
+      reviews,
+    });
   };
 }
 export default new BrandServices();

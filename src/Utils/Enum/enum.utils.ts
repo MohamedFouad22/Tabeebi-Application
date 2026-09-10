@@ -43,6 +43,12 @@ export enum storageTypeEnum {
   DISK = "DISK",
 }
 
+export enum ItemTypeEnum {
+  BRAND = "Brand",
+  PRODUCT = "Product",
+  DOCTOR = "Doctor",
+}
+
 export enum SubjectEnum {
   CONFIRM_EMAIL = "Please Confirm Your Email",
   WELCOME_EMAIL = "Welcome To The Tabeebi Application",

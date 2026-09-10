@@ -13,9 +13,11 @@ import {
 } from "../../Utils/Multer/multer.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
+  brandReviewsSchema,
   createBrandSchema,
   deleteBrandSchema,
   getSpecificBrandSchema,
+  reteBrandSchema,
   updateBrandSchema,
 } from "./brand.validation";
 
@@ -56,6 +58,30 @@ router.delete(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.COMPANY, RoleEnum.ADMIN]),
   validation(deleteBrandSchema),
   brandServices.deleteBrand,
+);
+
+router.patch(
+  "/rate-brand/:brandId",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
+    RoleEnum.DOCTOR,
+    RoleEnum.USER,
+  ]),
+  validation(reteBrandSchema),
+  brandServices.rateBrand,
+);
+
+router.get(
+  "/get-brand-reviews/:brandId",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
+    RoleEnum.DOCTOR,
+    RoleEnum.USER,
+  ]),
+  validation(brandReviewsSchema),
+  brandServices.getBrandReviews,
 );
 
 export default router;
