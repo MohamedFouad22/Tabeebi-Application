@@ -81,3 +81,11 @@ export const updateCategorySchema = {
     })
     .passthrough(),
 };
+
+export const deleteCategorySchema = {
+  params: z.strictObject({
+    categoryId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

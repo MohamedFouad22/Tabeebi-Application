@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import {
   createCategoryDTO,
+  deleteCategoryDTO,
   getCategoryDTO,
-  updateCategoryParamsSchema,
-  updateCategorySchema,
+  updateCategoryDTO,
+  updateCategoryParamsDTO,
 } from "./category.dto";
 import { CategoryRepository } from "../../DB/Repositories/category.repository";
 import { categoryModel } from "../../DB/Models/category.model";
@@ -129,13 +130,13 @@ export class categoryServices {
   };
 
   updateCategory = async (req: Request, res: Response): Promise<Response> => {
-    const { categoryId } = req.params as updateCategoryParamsSchema;
+    const { categoryId } = req.params as updateCategoryParamsDTO;
     const {
       categoryName,
       categoryDescription,
       brands,
       topBrands,
-    }: updateCategorySchema = req.body;
+    }: updateCategoryDTO = req.body;
 
     const category = await this._categoryModel.findOne({
       filter: { _id: categoryId },
@@ -216,6 +217,27 @@ export class categoryServices {
     });
 
     return res.status(200).json({ message: "Category Updated Successfully" });
+  };
+
+  deleteCategory = async (req: Request, res: Response): Promise<Response> => {
+    const { categoryId } = req.params as deleteCategoryDTO;
+
+    const category = await this._categoryModel.findOne({
+      filter: { _id: categoryId },
+    });
+    if (!category) throw new NotFoundException("Category Not Found");
+
+    if (category.categoryImage && category.categoryImage?.length > 0) {
+      await deleteFiles({
+        urls: category.categoryImage,
+      });
+    }
+
+    await this._categoryModel.deleteOne({
+      filter: { _id: categoryId },
+    });
+
+    return res.status(200).json({ message: "Category Deleted Successfully" });
   };
 }
 export default new categoryServices();

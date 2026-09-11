@@ -10,6 +10,7 @@ import {
 import { validation } from "../../Middleware/validation.middleware";
 import {
   createCategorySchema,
+  deleteCategorySchema,
   getCategorySchema,
   updateCategorySchema,
 } from "./category.validation";
@@ -48,6 +49,13 @@ router.patch(
   }).array("categoryImage", 5),
   validation(updateCategorySchema),
   categoryServices.updateCategory,
+);
+
+router.delete(
+  "/delete-category/:categoryId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN]),
+  validation(deleteCategorySchema),
+  categoryServices.deleteCategory,
 );
 
 export default router;
