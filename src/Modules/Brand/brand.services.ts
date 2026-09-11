@@ -18,7 +18,6 @@ import {
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
-import { Types } from "mongoose";
 import { ItemTypeEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
 import { RateRepository } from "../../DB/Repositories/rate.repository";
 import { rateModel } from "../../DB/Models/rate.model";
