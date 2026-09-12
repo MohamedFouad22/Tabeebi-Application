@@ -6,7 +6,7 @@ export interface IProduct {
   productName: string;
   overview: string;
   productImages: string[];
-  slug: string;
+  slug?: string;
 
   brand: Types.ObjectId;
   category: Types.ObjectId;
@@ -14,10 +14,10 @@ export interface IProduct {
 
   originalPrice: number;
   discountPercentage: number;
-  priceAfterDiscount: number;
+  priceAfterDiscount?: number;
   rate?: number;
   stock: number;
-  sold: number;
+  sold?: number;
 
   createdAt: Date;
   updatedAt?: Date;
@@ -43,7 +43,6 @@ export const productSchema = new Schema<IProduct>(
 
     slug: {
       type: String,
-      required: true,
     },
 
     productImages: {
@@ -86,7 +85,6 @@ export const productSchema = new Schema<IProduct>(
     priceAfterDiscount: {
       type: Number,
       min: 0,
-      required: true,
     },
 
     rate: {
@@ -104,7 +102,6 @@ export const productSchema = new Schema<IProduct>(
     sold: {
       type: Number,
       min: 0,
-      required: true,
     },
   },
   {
