@@ -11,6 +11,7 @@ import {
   createProductSchema,
   deleteProductSchema,
   getProductSchema,
+  updateProductSchema,
 } from "./product.validation";
 import {
   cloudFileValidtion,
@@ -36,6 +37,18 @@ router.get(
   "/get-product/:productId",
   validation(getProductSchema),
   productServices.getSpecificProduct,
+);
+
+router.patch(
+  "/update-product/:productId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.COMPANY]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 50,
+    validation: [...fileValidation.image],
+  }).array("productImages", 10),
+  validation(updateProductSchema),
+  productServices.updateProduct,
 );
 
 router.delete(

@@ -3,6 +3,8 @@ import {
   createProductDTO,
   deleteProductDTO,
   getProductDto,
+  updateProductDTO,
+  updateProductParamsDTO,
 } from "./product.dto";
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import { productModel } from "../../DB/Models/product.model";
@@ -14,7 +16,6 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
-  UnauthorizedException,
 } from "../../Utils/Security/Error/global.error.utils";
 import {
   deleteFiles,
@@ -149,6 +150,68 @@ class ProductServices {
     return res
       .status(200)
       .json({ message: "Get Product Successfully", product });
+  };
+
+  updateProduct = async (req: Request, res: Response): Promise<Response> => {
+    const { productId } = req.params as updateProductParamsDTO;
+    const {
+      productName,
+      overview,
+      brand,
+      category,
+      originalPrice,
+      discountPercentage,
+      stock,
+    }: updateProductDTO = req.body;
+
+    const product = await this._productModel.findOne({
+      filter: { _id: productId },
+    });
+    if (!product) throw new NotFoundException("Product Not Found");
+
+    if (
+      req.decoded.role === RoleEnum.ADMIN ||
+      req.decoded._id === product.createdBy
+    ) {
+      let urls;
+      if (Array.isArray(req.files) && req.files?.length > 0) {
+        await deleteFiles({ urls: product.productImages });
+        urls = await uploadFiles({
+          path: `Product/Product Images/${req.decoded._id}`,
+          files: req.files as Express.Multer.File[],
+        });
+      }
+
+      const effectiveOriginalPrice = originalPrice ?? product.originalPrice;
+      const effectiveDiscount =
+        discountPercentage ?? product.discountPercentage;
+
+      const finalPrice =
+        effectiveOriginalPrice -
+        (effectiveOriginalPrice * effectiveDiscount) / 100;
+
+      await this._productModel.updateOne({
+        filter: { _id: productId },
+        update: {
+          ...(productName && { productName }),
+          ...(overview && { overview }),
+          ...(brand && { brand }),
+          ...(urls && { productImages: urls }),
+          ...(category && { category }),
+          originalPrice: effectiveOriginalPrice,
+          discountPercentage: effectiveDiscount,
+          priceAfterDiscount: finalPrice,
+          ...(stock !== undefined && { stock }),
+          $inc: { __v: 1 },
+        },
+      });
+    } else {
+      throw new ForbiddenException(
+        "You Don't Have Permission To Update The Product",
+      );
+    }
+
+    return res.status(200).json({ message: "Product Updated Successfully" });
   };
 
   deleteProduct = async (req: Request, res: Response): Promise<Response> => {

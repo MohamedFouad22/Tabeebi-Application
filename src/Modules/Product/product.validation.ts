@@ -36,6 +36,46 @@ export const getProductSchema = {
   }),
 };
 
+export const updateProductSchema = {
+  params: z.strictObject({
+    productId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z.strictObject({
+    productName: z
+      .string()
+      .min(2, { message: "Product Name Must Be At Least 2 Letters" })
+      .max(200, { message: "Product Name Must Be At Most 200 Letters" })
+      .trim()
+      .optional(),
+    overview: z
+      .string()
+      .min(2, { message: "Product Overview Must Be At Least 2 Letters" })
+      .max(5000, { message: "Product Overview Must Be At Most 5000 Letters" })
+      .trim()
+      .optional(),
+    brand: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+    category: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+    originalPrice: z.coerce
+      .number()
+      .positive({ message: "Price must be greater than 0" })
+      .optional(),
+    discountPercentage: z.coerce.number().min(0).max(100).optional(),
+    stock: z.coerce.number().int().min(0).optional(),
+  }),
+};
+
 export const deleteProductSchema = {
   params: z.strictObject({
     productId: z.string().refine((value) => {
