@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { createProductDTO } from "./product.dto";
+import {
+  createProductDTO,
+  deleteProductDTO,
+  getProductDto,
+} from "./product.dto";
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import { productModel } from "../../DB/Models/product.model";
 import { BrandRepository } from "../../DB/Repositories/brand.repository";
@@ -8,12 +12,15 @@ import { CategoryRepository } from "../../DB/Repositories/category.repository";
 import { categoryModel } from "../../DB/Models/category.model";
 import {
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
+  UnauthorizedException,
 } from "../../Utils/Security/Error/global.error.utils";
 import {
   deleteFiles,
   uploadFiles,
 } from "../../Utils/Multer/aws.services.utils";
+import { RoleEnum } from "../../Utils/Enum/enum.utils";
 
 class ProductServices {
   private _productModel = new ProductRepository(productModel);
@@ -85,13 +92,87 @@ class ProductServices {
         throw new BadRequestException("Failed To Create Product");
       }
 
-      return res
-        .status(201)
-        .json({ message: "Product Created Successfully", product });
+      return res.status(201).json({ message: "Product Created Successfully" });
     } catch (error) {
       await deleteFiles({ urls });
       throw error;
     }
+  };
+
+  getProducts = async (req: Request, res: Response): Promise<Response> => {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const [products, totalProducts] = await Promise.all([
+      this._productModel.find({
+        projection: "-updatedAt -createdAt -__v",
+        options: {
+          sort: { createdAt: -1 },
+          skip,
+          limit,
+          populate: [
+            { path: "brand", select: "brandName createdBy" },
+            { path: "category", select: "categoryName createdBy" },
+          ],
+        },
+      }),
+      this._productModel.countDocuments({ filter: {} }),
+    ]);
+
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    return res.status(200).json({
+      message: "Get Products Successfully",
+      pagination: {
+        currentPage: page,
+        limit,
+        totalProducts,
+        totalPages,
+      },
+      products,
+    });
+  };
+
+  getSpecificProduct = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { productId } = req.params as getProductDto;
+
+    const product = await this._productModel.findOne({
+      filter: { _id: productId },
+      projection: "-updatedAt -createdAt -__v",
+    });
+    if (!product) throw new NotFoundException("Product Not Found");
+
+    return res
+      .status(200)
+      .json({ message: "Get Product Successfully", product });
+  };
+
+  deleteProduct = async (req: Request, res: Response): Promise<Response> => {
+    const { productId } = req.params as deleteProductDTO;
+
+    const product = await this._productModel.findOne({
+      filter: { _id: productId },
+    });
+    if (!product) throw new NotFoundException("Product Not Found");
+
+    if (
+      req.decoded.role === RoleEnum.ADMIN ||
+      req.decoded._id === product?.createdBy
+    ) {
+      await deleteFiles({ urls: product.productImages });
+
+      await this._productModel.deleteOne({ filter: { _id: productId } });
+    } else {
+      throw new ForbiddenException(
+        "You Don't Have Permission To Delete The Product",
+      );
+    }
+
+    return res.status(200).json({ message: "Product Deleted Successfully" });
   };
 }
 export default new ProductServices();

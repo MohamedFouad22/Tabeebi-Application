@@ -27,3 +27,19 @@ export const createProductSchema = {
     sold: z.coerce.number().min(0).default(0).optional(),
   }),
 };
+
+export const getProductSchema = {
+  params: z.strictObject({
+    productId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
+
+export const deleteProductSchema = {
+  params: z.strictObject({
+    productId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

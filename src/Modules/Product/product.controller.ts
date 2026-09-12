@@ -7,7 +7,11 @@ import {
 } from "../../Utils/Enum/enum.utils";
 import productServices from "./product.services";
 import { validation } from "../../Middleware/validation.middleware";
-import { createProductSchema } from "./product.validation";
+import {
+  createProductSchema,
+  deleteProductSchema,
+  getProductSchema,
+} from "./product.validation";
 import {
   cloudFileValidtion,
   fileValidation,
@@ -24,6 +28,21 @@ router.post(
   }).array("productImages", 10),
   validation(createProductSchema),
   productServices.createProduct,
+);
+
+router.get("/get-products", productServices.getProducts);
+
+router.get(
+  "/get-product/:productId",
+  validation(getProductSchema),
+  productServices.getSpecificProduct,
+);
+
+router.delete(
+  "/delete-product/:productId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.COMPANY]),
+  validation(deleteProductSchema),
+  productServices.deleteProduct,
 );
 
 export default router;
