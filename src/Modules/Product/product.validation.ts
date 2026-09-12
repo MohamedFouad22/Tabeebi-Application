@@ -83,3 +83,14 @@ export const deleteProductSchema = {
     }),
   }),
 };
+
+export const updateProductStockSchema = {
+  params: z.strictObject({
+    productId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z.strictObject({
+    stock: z.coerce.number().int().min(0),
+  }),
+};

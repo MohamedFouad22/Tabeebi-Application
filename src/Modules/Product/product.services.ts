@@ -5,6 +5,8 @@ import {
   getProductDto,
   updateProductDTO,
   updateProductParamsDTO,
+  updateProductStockDTO,
+  updateProductStockParamsDTO,
 } from "./product.dto";
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import { productModel } from "../../DB/Models/product.model";
@@ -236,6 +238,35 @@ class ProductServices {
     }
 
     return res.status(200).json({ message: "Product Deleted Successfully" });
+  };
+
+  updateProductStock = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { productId } = req.params as updateProductStockParamsDTO;
+    const { stock }: updateProductStockDTO = req.body;
+
+    const product = await this._productModel.findOne({
+      filter: { _id: productId },
+    });
+    if (!product) throw new NotFoundException("Product Not Found");
+
+    if (
+      req.decoded.role === RoleEnum.ADMIN ||
+      req.decoded._id === product.createdBy
+    ) {
+      await this._productModel.updateOne({
+        filter: { _id: productId },
+        update: { stock, $inc: { __v: 1 } },
+      });
+    } else {
+      throw new ForbiddenException(
+        "You Don't Have Permission To Update The Stock",
+      );
+    }
+
+    return res.status(200).json({ message: "Stock Updated Successfully" });
   };
 }
 export default new ProductServices();

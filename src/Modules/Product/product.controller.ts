@@ -12,6 +12,7 @@ import {
   deleteProductSchema,
   getProductSchema,
   updateProductSchema,
+  updateProductStockSchema,
 } from "./product.validation";
 import {
   cloudFileValidtion,
@@ -56,6 +57,13 @@ router.delete(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.COMPANY]),
   validation(deleteProductSchema),
   productServices.deleteProduct,
+);
+
+router.patch(
+  "/update-stock/:productId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.COMPANY]),
+  validation(updateProductStockSchema),
+  productServices.updateProductStock,
 );
 
 export default router;
