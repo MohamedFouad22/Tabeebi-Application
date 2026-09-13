@@ -4,6 +4,7 @@ import {
   deleteImageSchema,
   deleteProductSchema,
   getProductSchema,
+  searchProductSchema,
   updateProductSchema,
   updateProductStockSchema,
 } from "./product.validation";
@@ -21,3 +22,4 @@ export type updateProductStockParamsDTO = z.infer<
 >;
 export type deleteImageDTO = z.infer<typeof deleteImageSchema.body>;
 export type deleteImageParamsDTO = z.infer<typeof deleteImageSchema.params>;
+export type searchProductDTO = z.infer<typeof searchProductSchema.query>;

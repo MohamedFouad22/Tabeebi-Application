@@ -12,6 +12,7 @@ import {
   deleteImageSchema,
   deleteProductSchema,
   getProductSchema,
+  searchProductSchema,
   updateProductSchema,
   updateProductStockSchema,
 } from "./product.validation";
@@ -20,6 +21,12 @@ import {
   fileValidation,
 } from "../../Utils/Multer/multer.utils";
 export const router: Router = Router();
+
+router.get(
+  "/search-product",
+  validation(searchProductSchema),
+  productServices.searchProduct,
+);
 
 router.post(
   "/create-product",

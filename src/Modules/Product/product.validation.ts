@@ -105,3 +105,9 @@ export const deleteImageSchema = {
     key: z.string(),
   }),
 };
+
+export const searchProductSchema = {
+  query: z.strictObject({
+    productName: z.string(),
+  }),
+};

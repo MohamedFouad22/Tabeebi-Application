@@ -5,6 +5,7 @@ import {
   deleteImageParamsDTO,
   deleteProductDTO,
   getProductDto,
+  searchProductDTO,
   updateProductDTO,
   updateProductParamsDTO,
   updateProductStockDTO,
@@ -33,6 +34,74 @@ class ProductServices {
   private _brandModel = new BrandRepository(brandModel);
   private _categoryModel = new CategoryRepository(categoryModel);
   constructor() {}
+
+  searchProduct = async (req: Request, res: Response): Promise<Response> => {
+    const { productName } = req.query as unknown as searchProductDTO;
+
+    const searchRegex = new RegExp(
+      productName
+        .trim()
+        .split(/\s+/)
+        .map((w) => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`)
+        .join("") + ".+$",
+      "i",
+    );
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const [product, totalProducts] = await Promise.all([
+      this._productModel.find({
+        filter: { productName: searchRegex },
+        projection: "-__v -updatedAt -createdAt",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+          populate: [
+            {
+              path: "brand",
+              select: "brandName createdBy",
+            },
+            {
+              path: "category",
+              select: "categoryName createdBy",
+            },
+          ],
+        },
+      }),
+      this._productModel.countDocuments({
+        filter: { productName: searchRegex },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    if (product.length < 1) {
+      return res.status(200).json({
+        message: "Not Found Same Product",
+        pagination: {
+          currentPage: page,
+          totalPages,
+          limit,
+          totalProducts,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      message: "Get Product Successfully",
+      product,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        limit,
+        totalProducts,
+      },
+    });
+  };
 
   createProduct = async (req: Request, res: Response): Promise<Response> => {
     const {
