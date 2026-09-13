@@ -9,6 +9,7 @@ import productServices from "./product.services";
 import { validation } from "../../Middleware/validation.middleware";
 import {
   createProductSchema,
+  deleteImageSchema,
   deleteProductSchema,
   getProductSchema,
   updateProductSchema,
@@ -64,6 +65,13 @@ router.patch(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.COMPANY]),
   validation(updateProductStockSchema),
   productServices.updateProductStock,
+);
+
+router.delete(
+  "/delete-image/:productId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.COMPANY]),
+  validation(deleteImageSchema),
+  productServices.deleteImage,
 );
 
 export default router;

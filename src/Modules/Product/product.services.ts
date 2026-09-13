@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import {
   createProductDTO,
+  deleteImageDTO,
+  deleteImageParamsDTO,
   deleteProductDTO,
   getProductDto,
   updateProductDTO,
@@ -20,6 +22,7 @@ import {
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import {
+  deleteFile,
   deleteFiles,
   uploadFiles,
 } from "../../Utils/Multer/aws.services.utils";
@@ -267,6 +270,43 @@ class ProductServices {
     }
 
     return res.status(200).json({ message: "Stock Updated Successfully" });
+  };
+
+  deleteImage = async (req: Request, res: Response): Promise<Response> => {
+    const { productId } = req.params as deleteImageParamsDTO;
+    const { key }: deleteImageDTO = req.body;
+
+    const product = await this._productModel.findOne({
+      filter: { _id: productId },
+    });
+    if (!product) throw new NotFoundException("Product Not Found");
+
+    if (
+      req.decoded.role === RoleEnum.ADMIN ||
+      req.decoded._id === product.createdBy
+    ) {
+      if (product.productImages.length > 1) {
+        if (product.productImages.includes(key)) {
+          await deleteFile({ Key: key });
+          await this._productModel.updateOne({
+            filter: { _id: productId },
+            update: { $pull: { productImages: key }, $inc: { __v: 1 } },
+          });
+        } else {
+          throw new NotFoundException("This Image Not Found");
+        }
+      } else {
+        throw new BadRequestException(
+          "Cannot Delete The Only Remaining Image Of The Product",
+        );
+      }
+    } else {
+      throw new ForbiddenException(
+        "You Don't Have Permission To Delete This Image",
+      );
+    }
+
+    return res.status(200).json({ message: "Image Deleted Successfully" });
   };
 }
 export default new ProductServices();

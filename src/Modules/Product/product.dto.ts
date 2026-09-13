@@ -1,6 +1,7 @@
 import * as z from "zod";
 import {
   createProductSchema,
+  deleteImageSchema,
   deleteProductSchema,
   getProductSchema,
   updateProductSchema,
@@ -18,3 +19,5 @@ export type updateProductStockDTO = z.infer<
 export type updateProductStockParamsDTO = z.infer<
   typeof updateProductStockSchema.params
 >;
+export type deleteImageDTO = z.infer<typeof deleteImageSchema.body>;
+export type deleteImageParamsDTO = z.infer<typeof deleteImageSchema.params>;

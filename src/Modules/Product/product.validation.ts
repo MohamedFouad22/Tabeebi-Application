@@ -94,3 +94,14 @@ export const updateProductStockSchema = {
     stock: z.coerce.number().int().min(0),
   }),
 };
+
+export const deleteImageSchema = {
+  params: z.strictObject({
+    productId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z.strictObject({
+    key: z.string(),
+  }),
+};
