@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { IcreateClinicDTO } from "./clinic.dto";
+import { IcreateClinicDTO, IgetAllClinicsDTO } from "./clinic.dto";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
 import { clinicModel } from "../../DB/Models/clinic.model";
 import {
@@ -83,6 +83,57 @@ class clinicServices {
     }
 
     return res.status(201).json({ message: "Clinic Created Successfully" });
+  };
+
+  getAllClinics = async (req: Request, res: Response): Promise<Response> => {
+    const { clinicName } = req.query as unknown as IgetAllClinicsDTO;
+
+    const searchRegex =
+      clinicName &&
+      new RegExp(
+        clinicName
+          .trim()
+          .split(/\s+/)
+          .map((w) => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`)
+          .join("") + ".+$",
+        "i",
+      );
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const [clinics, totalClinics] = await Promise.all([
+      this._clinicModel.find({
+        filter: clinicName ? { clinicName: searchRegex } : {},
+        projection: "-__v -createdAt -updatedAt",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+        },
+      }),
+      this._clinicModel.countDocuments({
+        filter: clinicName ? { clinicName: searchRegex } : {},
+      }),
+    ]);
+    if (!clinics.length || clinics.length < 1) {
+      return res.status(200).json({ message: "No Clinics Found", clinics: [] });
+    }
+
+    const totalPages = Math.ceil(totalClinics / limit);
+
+    return res.status(200).json({
+      message: "Get Clinics Successfully",
+      Pagination: {
+        totalPages,
+        currentPage: page,
+        limit,
+        totalClinics,
+      },
+      clinics,
+    });
   };
 }
 export default new clinicServices();

@@ -26,3 +26,11 @@ export const createClinicSchema = {
       .default([]),
   }),
 };
+
+export const getAllClinicsSchema = {
+  query: z.strictObject({
+    clinicName: z.string().optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
+  }),
+};

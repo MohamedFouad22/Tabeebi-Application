@@ -109,5 +109,7 @@ export const deleteImageSchema = {
 export const searchProductSchema = {
   query: z.strictObject({
     productName: z.string(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
   }),
 };

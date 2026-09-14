@@ -7,7 +7,7 @@ import {
 } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import clinicServices from "./clinic.services";
-import { createClinicSchema } from "./clinic.validation";
+import { createClinicSchema, getAllClinicsSchema } from "./clinic.validation";
 import {
   cloudFileValidtion,
   fileValidation,
@@ -24,6 +24,12 @@ router.post(
   }).single("clinicLogo"),
   validation(createClinicSchema),
   clinicServices.createClinic,
+);
+
+router.get(
+  "/get-all-clinics",
+  validation(getAllClinicsSchema),
+  clinicServices.getAllClinics,
 );
 
 export default router;
