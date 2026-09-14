@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import {
   IcreateClinicDTO,
+  IdeleteClinicDTO,
   IgetAllClinicsDTO,
   IgetClinicDTO,
   IupdateClinicDto,
@@ -231,6 +232,30 @@ class clinicServices {
     }
 
     return res.status(200).json({ message: "Update Clinic Successfully" });
+  };
+
+  deleteClinic = async (req: Request, res: Response): Promise<Response> => {
+    const { clinicId } = req.params as IdeleteClinicDTO;
+
+    const clinic = await this._clinicModel.findOne({
+      filter: { _id: clinicId },
+    });
+    if (!clinic) throw new NotFoundException("Clinic Not Found");
+
+    if (
+      req.decoded.role !== RoleEnum.ADMIN &&
+      req.decoded._id.toString() !== clinic.createdBy.toString()
+    ) {
+      throw new ForbiddenException("Not Allowed To Delete Clinic");
+    }
+
+    if (clinic.clinicLogo) {
+      await deleteFile({ Key: String(clinic.clinicLogo) });
+    }
+
+    await this._clinicModel.deleteOne({ filter: { _id: clinicId } });
+
+    return res.status(200).json({ message: "Clinic Deleted Successfully" });
   };
 }
 export default new clinicServices();

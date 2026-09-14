@@ -9,6 +9,7 @@ import { validation } from "../../Middleware/validation.middleware";
 import clinicServices from "./clinic.services";
 import {
   createClinicSchema,
+  deleteClinicSchema,
   getAllClinicsSchema,
   getClinicSchema,
   updateClinicSchema,
@@ -53,6 +54,13 @@ router.patch(
   }).single("clinicLogo"),
   validation(updateClinicSchema),
   clinicServices.updateClinic,
+);
+
+router.delete(
+  "/delete-clinic/:clinicId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  validation(deleteClinicSchema),
+  clinicServices.deleteClinic,
 );
 
 export default router;

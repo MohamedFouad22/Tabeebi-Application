@@ -67,3 +67,11 @@ export const updateClinicSchema = {
     email: generalFields.email.optional(),
   }),
 };
+
+export const deleteClinicSchema = {
+  params: z.strictObject({
+    clinicId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
