@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { IcreateClinicDTO, IgetAllClinicsDTO } from "./clinic.dto";
+import {
+  IcreateClinicDTO,
+  IgetAllClinicsDTO,
+  IgetClinicDTO,
+} from "./clinic.dto";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
 import { clinicModel } from "../../DB/Models/clinic.model";
 import {
@@ -134,6 +138,25 @@ class clinicServices {
       },
       clinics,
     });
+  };
+
+  getClinic = async (req: Request, res: Response): Promise<Response> => {
+    const { clinicId } = req.params as IgetClinicDTO;
+
+    const clinic = await this._clinicModel.findOne({
+      filter: { _id: clinicId },
+      projection: "-__v -createdAt -updatedAt",
+      options: {
+        populate: [
+          { path: "doctors", select: "userName specialization email phone" },
+        ],
+      },
+    });
+    if (!clinic) {
+      throw new NotFoundException("Clinic Not Found");
+    }
+
+    return res.status(200).json({ message: "Get Clinic Successfully", clinic });
   };
 }
 export default new clinicServices();

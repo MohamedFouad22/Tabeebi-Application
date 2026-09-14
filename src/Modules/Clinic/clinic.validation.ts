@@ -34,3 +34,11 @@ export const getAllClinicsSchema = {
     limit: z.string().optional(),
   }),
 };
+
+export const getClinicSchema = {
+  params: z.strictObject({
+    clinicId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
