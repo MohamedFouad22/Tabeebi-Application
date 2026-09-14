@@ -22,7 +22,8 @@ export const clinicSchema = new Schema<IClinic>(
     clinicName: {
       type: String,
       minLength: 2,
-      maxLength: 25,
+      maxLength: 50,
+      unique: true,
       trim: true,
       required: true,
     },
@@ -48,7 +49,6 @@ export const clinicSchema = new Schema<IClinic>(
       trim: true,
       lowercase: true,
       unique: true,
-      required: true,
     },
 
     clinicLogo: {
