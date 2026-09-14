@@ -3,12 +3,15 @@ import {
   IcreateClinicDTO,
   IgetAllClinicsDTO,
   IgetClinicDTO,
+  IupdateClinicDto,
+  IupdateClinicParamsDto,
 } from "./clinic.dto";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
 import { clinicModel } from "../../DB/Models/clinic.model";
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
@@ -157,6 +160,77 @@ class clinicServices {
     }
 
     return res.status(200).json({ message: "Get Clinic Successfully", clinic });
+  };
+
+  updateClinic = async (req: Request, res: Response): Promise<Response> => {
+    const { clinicId } = req.params as IupdateClinicParamsDto;
+    const { clinicName, location, address, phone, email }: IupdateClinicDto =
+      req.body;
+
+    const checkClinic = await this._clinicModel.findOne({
+      filter: { _id: clinicId },
+    });
+    if (!checkClinic) throw new NotFoundException("Not Found Clinic");
+
+    if (
+      req.user.role !== RoleEnum.ADMIN &&
+      req.decoded._id.toString() !== checkClinic.createdBy.toString()
+    ) {
+      throw new ForbiddenException("Not Allowed To Update Clinic");
+    }
+
+    if (clinicName || phone) {
+      const duplicateCheck = await this._clinicModel.findOne({
+        filter: {
+          _id: { $ne: clinicId },
+          $or: [
+            ...(clinicName ? [{ clinicName }] : []),
+            ...(phone ? [{ phone }] : []),
+          ],
+        },
+      });
+      if (duplicateCheck) {
+        throw new ConflictException(
+          "Clinic Name or Phone already in use by another clinic",
+        );
+      }
+    }
+
+    let key: string | undefined;
+    if (req.file as Express.Multer.File) {
+      await deleteFile({ Key: String(checkClinic.clinicLogo) });
+
+      key = await uploadFile({
+        path: `Clinic/Clinic Logo/${req.decoded._id}`,
+        file: req.file as Express.Multer.File,
+      });
+    }
+
+    try {
+      const clinic = await this._clinicModel.updateOne({
+        filter: { _id: clinicId },
+        update: {
+          ...(clinicName && { clinicName }),
+          ...(location && { location }),
+          ...(address && { address }),
+          ...(phone && { phone }),
+          ...(email && { email }),
+          ...(key && { clinicLogo: key }),
+          $inc: { __v: 1 },
+        },
+      });
+      if (!clinic) {
+        throw new BadRequestException("Failed To Update Clinic");
+      }
+      if (key && checkClinic.clinicLogo) {
+        await deleteFile({ Key: String(checkClinic.clinicLogo) });
+      }
+    } catch (error) {
+      if (key) await deleteFile({ Key: key });
+      throw error;
+    }
+
+    return res.status(200).json({ message: "Update Clinic Successfully" });
   };
 }
 export default new clinicServices();

@@ -11,6 +11,7 @@ import {
   createClinicSchema,
   getAllClinicsSchema,
   getClinicSchema,
+  updateClinicSchema,
 } from "./clinic.validation";
 import {
   cloudFileValidtion,
@@ -40,6 +41,18 @@ router.get(
   "/get-clinic/:clinicId",
   validation(getClinicSchema),
   clinicServices.getClinic,
+);
+
+router.patch(
+  "/update/clinic/:clinicId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 5,
+    validation: [...fileValidation.image],
+  }).single("clinicLogo"),
+  validation(updateClinicSchema),
+  clinicServices.updateClinic,
 );
 
 export default router;
