@@ -75,3 +75,28 @@ export const deleteClinicSchema = {
     }),
   }),
 };
+
+export const updateClinicDoctorsSchema = {
+  params: z.strictObject({
+    clinicId: z.string().refine((val) => Types.ObjectId.isValid(val), {
+      message: "Invalid Clinic ID",
+    }),
+    doctorId: z
+      .string()
+      .optional()
+      .refine((val) => !val || Types.ObjectId.isValid(val), {
+        message: "Invalid Doctor ID",
+      }),
+  }),
+  body: z
+    .object({
+      doctors: z
+        .array(
+          z.string().refine((val) => Types.ObjectId.isValid(val), {
+            message: "Invalid Doctor ID in list",
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+};

@@ -12,6 +12,7 @@ import {
   deleteClinicSchema,
   getAllClinicsSchema,
   getClinicSchema,
+  updateClinicDoctorsSchema,
   updateClinicSchema,
 } from "./clinic.validation";
 import {
@@ -61,6 +62,13 @@ router.delete(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
   validation(deleteClinicSchema),
   clinicServices.deleteClinic,
+);
+
+router.patch(
+  "/update-clinic-doctors/:clinicId{/:doctorId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  validation(updateClinicDoctorsSchema),
+  clinicServices.updateClinicDoctor,
 );
 
 export default router;
