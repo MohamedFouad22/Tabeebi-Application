@@ -133,3 +133,11 @@ export const updateDoctorSchema = {
       }
     }),
 };
+
+export const deleteDoctorSchema = {
+  params: z.strictObject({
+    doctorId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

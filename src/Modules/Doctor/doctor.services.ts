@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   createDoctorDTO,
   createDoctorParamsDTO,
+  deleteDoctorDTO,
   getDoctorDTO,
   getDoctorsDTO,
   updateDoctorDTO,
@@ -268,6 +269,34 @@ class doctorServices {
     if (key) await deleteFile({ Key: oldImage });
 
     return res.status(200).json({ message: "Doctor Updated Successfully" });
+  };
+
+  deleteDoctor = async (req: Request, res: Response): Promise<Response> => {
+    const { doctorId } = req.params as deleteDoctorDTO;
+
+    const doctor = await this._doctorModel.findOne({
+      filter: { _id: doctorId },
+    });
+    if (!doctor) throw new NotFoundException("Doctor Not Found");
+
+    if (
+      req.decoded.role !== RoleEnum.ADMIN &&
+      req.decoded._id !== doctor.userId
+    ) {
+      throw new ForbiddenException("Not Allowed To Delete This Doctor");
+    }
+
+    const deleteDoctor = await this._doctorModel.deleteOne({
+      filter: { _id: doctorId },
+    });
+
+    if (!deleteDoctor) throw new BadRequestException("Failed To Delete Doctor");
+
+    if (doctor.doctorImage) {
+      await deleteFile({ Key: doctor.doctorImage });
+    }
+
+    return res.status(200).json({ message: "Doctor Deleted Successfully" });
   };
 }
 export default new doctorServices();

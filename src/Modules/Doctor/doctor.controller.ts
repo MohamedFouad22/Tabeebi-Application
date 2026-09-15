@@ -14,6 +14,7 @@ import {
 } from "../../Utils/Multer/multer.utils";
 import {
   createDoctorSchema,
+  deleteDoctorSchema,
   getDoctorSchema,
   getDoctorsSchema,
   updateDoctorSchema,
@@ -55,4 +56,10 @@ router.patch(
   doctorServices.updateDoctor,
 );
 
+router.delete(
+  "/delete-doctor/:doctorId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  validation(deleteDoctorSchema),
+  doctorServices.deleteDoctor,
+);
 export default router;
