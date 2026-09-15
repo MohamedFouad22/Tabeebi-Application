@@ -16,6 +16,7 @@ import {
   createDoctorSchema,
   getDoctorSchema,
   getDoctorsSchema,
+  updateDoctorSchema,
 } from "./doctor.validation";
 
 router.post(
@@ -40,6 +41,18 @@ router.get(
   "/get-doctor/:doctorId",
   validation(getDoctorSchema),
   doctorServices.getSpecificDoctor,
+);
+
+router.patch(
+  "/update-doctor/:doctorId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 5,
+    validation: [...fileValidation.image],
+  }).single("doctorImage"),
+  validation(updateDoctorSchema),
+  doctorServices.updateDoctor,
 );
 
 export default router;
