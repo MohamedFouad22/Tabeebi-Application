@@ -57,3 +57,11 @@ export const createDoctorSchema = {
       }
     }),
 };
+
+export const getDoctorsSchema = {
+  query: z.strictObject({
+    specialization: z.enum(SpecializationEnum).optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
+  }),
+};

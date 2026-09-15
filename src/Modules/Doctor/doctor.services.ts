@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { createDoctorDTO, createDoctorParamsDTO } from "./doctor.dto";
+import {
+  createDoctorDTO,
+  createDoctorParamsDTO,
+  getDoctorsDTO,
+} from "./doctor.dto";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
@@ -96,6 +100,59 @@ class doctorServices {
       if (key) await deleteFile({ Key: key });
       throw error;
     }
+  };
+
+  getDoctors = async (req: Request, res: Response): Promise<Response> => {
+    const { specialization } = req.query as unknown as getDoctorsDTO;
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+
+    if (specialization) {
+      filter.specialization = specialization;
+    }
+    const [doctors, totalDoctors] = await Promise.all([
+      this._doctorModel.find({
+        filter,
+        projection: "-__v -createdAt -updatedAt",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+          populate: [
+            {
+              path: "userId",
+              select: "firstName lastName email",
+            },
+            {
+              path: "clinic",
+              select: "clinicName address phone",
+            },
+          ],
+        },
+      }),
+      this._doctorModel.countDocuments({
+        filter,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalDoctors / limit);
+
+    return res.status(200).json({
+      message: "Get Doctors Successfully",
+      Pagination: {
+        currentPage: page,
+        limit,
+        skip,
+        totalDoctors,
+        totalPages,
+      },
+      doctors,
+    });
   };
 }
 export default new doctorServices();
