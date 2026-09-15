@@ -6,6 +6,7 @@ export interface IDoctor {
 
   doctorName: string;
   bio: string;
+  doctorImage: string;
 
   userId: Types.ObjectId;
   clinic?: Types.ObjectId;
@@ -40,6 +41,11 @@ export const doctorSchema = new Schema<IDoctor>(
       minLength: 2,
       maxLength: 250,
       trim: true,
+      required: true,
+    },
+
+    doctorImage: {
+      type: String,
       required: true,
     },
 

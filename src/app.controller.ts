@@ -14,6 +14,7 @@ import brandRouter from "./Modules/Brand/brand.controller";
 import categoryRouter from "./Modules/Category/category.controller";
 import productRouter from "./Modules/Product/product.controller";
 import clinicRouter from "./Modules/Clinic/clinic.controller";
+import doctorRouter from "./Modules/Doctor/doctor.controller";
 dotenv.config({ path: `${path.resolve()}/config/.env.dev` });
 
 const limit = rateLimit({
@@ -37,6 +38,7 @@ export const bootstrap = async () => {
   app.use("/api/v1/category", categoryRouter);
   app.use("/api/v1/product", productRouter);
   app.use("/api/v1/clinic", clinicRouter);
+  app.use("/api/v1/doctor", doctorRouter);
 
   app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({ message: "Hello From Tabeebi App" });

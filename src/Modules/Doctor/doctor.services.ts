@@ -1,0 +1,101 @@
+import { Request, Response } from "express";
+import { createDoctorDTO, createDoctorParamsDTO } from "./doctor.dto";
+import { UserRepository } from "../../DB/Repositories/user.repository";
+import { userModel } from "../../DB/Models/user.model";
+import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
+import { clinicModel } from "../../DB/Models/clinic.model";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from "../../Utils/Security/Error/global.error.utils";
+import { RoleEnum } from "../../Utils/Enum/enum.utils";
+import { DoctorRepository } from "../../DB/Repositories/doctor.repository";
+import { doctorModel } from "../../DB/Models/doctor.model";
+import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
+
+class doctorServices {
+  private _userModel = new UserRepository(userModel);
+  private _clinicModel = new ClinicRepository(clinicModel);
+  private _doctorModel = new DoctorRepository(doctorModel);
+  constructor() {}
+
+  createDoctor = async (req: Request, res: Response): Promise<Response> => {
+    if (req.body.workingSchedule) {
+      req.body.workingSchedule = JSON.parse(req.body.workingSchedule);
+    }
+    const { userId } = req.params as createDoctorParamsDTO;
+    const {
+      doctorName,
+      bio,
+      clinic,
+      consultationFee,
+      specialization,
+      slotDuration,
+      workingSchedule,
+    }: createDoctorDTO = req.body;
+
+    const checkClinic = await this._clinicModel.findOne({
+      filter: { _id: clinic },
+    });
+    if (!checkClinic) throw new NotFoundException("Clinic Not Found");
+
+    const existingDoctor = await this._doctorModel.findOne({
+      filter: { userId: userId ? userId : req.decoded._id },
+    });
+
+    if (existingDoctor) {
+      throw new ConflictException(
+        "Doctor profile already exists for this user",
+      );
+    }
+
+    const user = await this._userModel.findOne({
+      filter: { _id: userId ? userId : req.decoded._id },
+    });
+    if (!user) throw new NotFoundException("User Not Found");
+
+    if (!user.profileImage && !req.file) {
+      throw new BadRequestException(
+        "Must upload a doctor image or have a profile image",
+      );
+    }
+
+    if (user.role !== RoleEnum.ADMIN && user.role !== RoleEnum.DOCTOR) {
+      throw new ForbiddenException("Not Allowed To Add This User");
+    }
+
+    let key;
+    if (req.file) {
+      key = await uploadFile({
+        path: `Doctors/Doctors Image/${userId ? userId : req.decoded._id}`,
+        file: req.file as Express.Multer.File,
+      });
+    }
+
+    try {
+      const [doctor] = await this._doctorModel.create({
+        data: [
+          {
+            doctorName,
+            bio,
+            doctorImage: key ? key : user.profileImage,
+            specialization,
+            userId: user._id,
+            workingSchedule,
+            clinic,
+            slotDuration,
+            consultationFee,
+          },
+        ],
+      });
+      if (!doctor) throw new BadRequestException("Failed To Create Doctor");
+      return res.status(201).json({ message: "Doctor Created Successfully" });
+    } catch (error) {
+      if (key) await deleteFile({ Key: key });
+      throw error;
+    }
+  };
+}
+export default new doctorServices();
