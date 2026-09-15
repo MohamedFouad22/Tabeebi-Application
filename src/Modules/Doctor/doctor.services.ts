@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   createDoctorDTO,
   createDoctorParamsDTO,
+  getDoctorDTO,
   getDoctorsDTO,
 } from "./doctor.dto";
 import { UserRepository } from "../../DB/Repositories/user.repository";
@@ -153,6 +154,33 @@ class doctorServices {
       },
       doctors,
     });
+  };
+
+  getSpecificDoctor = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { doctorId } = req.params as getDoctorDTO;
+
+    const doctor = await this._doctorModel.findOne({
+      filter: { _id: doctorId },
+      projection: "-__v -createdAt -updatedAt",
+      options: {
+        populate: [
+          {
+            path: "userId",
+            select: "firstName lastName email",
+          },
+          {
+            path: "clinic",
+            select: "clinicName address phone",
+          },
+        ],
+      },
+    });
+    if (!doctor) throw new NotFoundException("Doctor Not Found");
+
+    return res.status(200).json({ message: "Get Doctor Successfully", doctor });
   };
 }
 export default new doctorServices();

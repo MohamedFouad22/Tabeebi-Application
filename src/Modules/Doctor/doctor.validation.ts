@@ -65,3 +65,11 @@ export const getDoctorsSchema = {
     limit: z.string().optional(),
   }),
 };
+
+export const getDoctorSchema = {
+  params: z.strictObject({
+    doctorId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

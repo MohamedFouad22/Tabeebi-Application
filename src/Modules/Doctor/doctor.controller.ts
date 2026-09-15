@@ -12,7 +12,11 @@ import {
   cloudFileValidtion,
   fileValidation,
 } from "../../Utils/Multer/multer.utils";
-import { createDoctorSchema, getDoctorsSchema } from "./doctor.validation";
+import {
+  createDoctorSchema,
+  getDoctorSchema,
+  getDoctorsSchema,
+} from "./doctor.validation";
 
 router.post(
   "/create-doctor{/:userId}",
@@ -30,6 +34,12 @@ router.get(
   "/get-doctors",
   validation(getDoctorsSchema),
   doctorServices.getDoctors,
+);
+
+router.get(
+  "/get-doctor/:doctorId",
+  validation(getDoctorSchema),
+  doctorServices.getSpecificDoctor,
 );
 
 export default router;
