@@ -21,10 +21,12 @@ import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import { RoleEnum } from "../../Utils/Enum/enum.utils";
+import { DoctorRepository } from "../../DB/Repositories/doctor.repository";
+import { doctorModel } from "../../DB/Models/doctor.model";
 
 class clinicServices {
   private _clinicModel = new ClinicRepository(clinicModel);
-  private _userModel = new UserRepository(userModel);
+  private _doctorModel = new DoctorRepository(doctorModel);
   constructor() {}
 
   createClinic = async (req: Request, res: Response): Promise<Response> => {
@@ -50,7 +52,7 @@ class clinicServices {
     }
 
     if (finalDoctors.length > 0) {
-      const checkDoctors = await this._userModel.find({
+      const checkDoctors = await this._doctorModel.find({
         filter: { _id: { $in: finalDoctors }, role: RoleEnum.DOCTOR },
       });
       if (checkDoctors.length !== finalDoctors.length) {
@@ -279,7 +281,7 @@ class clinicServices {
     if (Array.isArray(doctors) && doctors.length > 0) {
       const newDoctors = [...new Set(doctors)];
 
-      const checkDoctors = await this._userModel.find({
+      const checkDoctors = await this._doctorModel.find({
         filter: { _id: { $in: newDoctors }, role: RoleEnum.DOCTOR },
       });
       if (checkDoctors.length !== newDoctors.length) {
@@ -299,7 +301,7 @@ class clinicServices {
         throw new BadRequestException("Failed To Update Clinic");
       }
     } else if (doctorId && doctorId.length > 0) {
-      const doctor = await this._userModel.findOne({
+      const doctor = await this._doctorModel.findOne({
         filter: { _id: doctorId },
       });
       if (!doctor) throw new NotFoundException("Doctor Not Found");
