@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import * as z from "zod";
 import { SpecializationEnum } from "../../Utils/Enum/enum.utils";
+import { generalFields } from "../../Middleware/generalFields.utils";
 
 export const createDoctorSchema = {
   params: z.strictObject({
@@ -23,12 +24,19 @@ export const createDoctorSchema = {
         .min(2, { message: "Bio Must Be At Least 2 Letters" })
         .max(250, { message: "Bio Must Be At Most 250 Letters" })
         .trim(),
-      clinic: z.string().refine((value) => {
-        return Types.ObjectId.isValid(value);
-      }),
+      clinic: z
+        .string()
+        .refine((value) => {
+          return Types.ObjectId.isValid(value);
+        })
+        .optional(),
       specialization: z.enum(SpecializationEnum),
       consultationFee: z.coerce.number().min(0),
       slotDuration: z.coerce.number().default(30),
+      phone: generalFields.phone.optional(),
+      email: generalFields.email.optional(),
+      location: z.string().optional(),
+      address: z.string().optional(),
       workingSchedule: z.preprocess(
         (value) => {
           if (typeof value === "string") {

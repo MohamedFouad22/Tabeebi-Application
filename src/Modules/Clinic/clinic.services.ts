@@ -18,8 +18,6 @@ import {
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
-import { UserRepository } from "../../DB/Repositories/user.repository";
-import { userModel } from "../../DB/Models/user.model";
 import { RoleEnum } from "../../Utils/Enum/enum.utils";
 import { DoctorRepository } from "../../DB/Repositories/doctor.repository";
 import { doctorModel } from "../../DB/Models/doctor.model";
@@ -53,7 +51,7 @@ class clinicServices {
 
     if (finalDoctors.length > 0) {
       const checkDoctors = await this._doctorModel.find({
-        filter: { _id: { $in: finalDoctors }, role: RoleEnum.DOCTOR },
+        filter: { _id: { $in: finalDoctors } },
       });
       if (checkDoctors.length !== finalDoctors.length) {
         throw new NotFoundException(
@@ -80,12 +78,18 @@ class clinicServices {
             phone,
             email,
             clinicLogo: key,
-            doctors,
+            doctors: finalDoctors,
             createdBy: req.decoded._id,
           },
         ],
       });
       if (!newClinic) throw new BadRequestException("Failed To Create Clinic");
+      if (doctors.length) {
+        await this._doctorModel.updateMany({
+          filter: { _id: { $in: finalDoctors } },
+          update: { $set: { clinic: newClinic._id } },
+        });
+      }
     } catch (error) {
       if (key) await deleteFile({ Key: key });
       throw error;
@@ -254,6 +258,11 @@ class clinicServices {
       await deleteFile({ Key: String(clinic.clinicLogo) });
     }
 
+    await this._doctorModel.updateMany({
+      filter: { clinic: clinicId },
+      update: { $unset: { clinic: "" } },
+    });
+
     await this._clinicModel.deleteOne({ filter: { _id: clinicId } });
 
     return res.status(200).json({ message: "Clinic Deleted Successfully" });
@@ -282,13 +291,18 @@ class clinicServices {
       const newDoctors = [...new Set(doctors)];
 
       const checkDoctors = await this._doctorModel.find({
-        filter: { _id: { $in: newDoctors }, role: RoleEnum.DOCTOR },
+        filter: { _id: { $in: newDoctors } },
       });
       if (checkDoctors.length !== newDoctors.length) {
         throw new NotFoundException(
           "One or more doctors were not found or not allowed",
         );
       }
+
+      await this._clinicModel.updateMany({
+        filter: { doctors: { $in: newDoctors } },
+        update: { $pull: { doctors: { $in: newDoctors } } },
+      });
 
       const updateClinic = await this._clinicModel.updateOne({
         filter: { _id: clinicId },
@@ -300,11 +314,22 @@ class clinicServices {
       if (!updateClinic) {
         throw new BadRequestException("Failed To Update Clinic");
       }
+      if (doctors.length) {
+        await this._doctorModel.updateMany({
+          filter: { _id: { $in: newDoctors } },
+          update: { $set: { clinic: clinicId } },
+        });
+      }
     } else if (doctorId && doctorId.length > 0) {
       const doctor = await this._doctorModel.findOne({
         filter: { _id: doctorId },
       });
       if (!doctor) throw new NotFoundException("Doctor Not Found");
+
+      await this._doctorModel.updateOne({
+        filter: { _id: doctorId },
+        update: { $unset: { clinic: "" } },
+      });
 
       const deleteDoctor = await this._clinicModel.updateOne({
         filter: { _id: clinicId },

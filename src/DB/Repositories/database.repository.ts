@@ -10,6 +10,7 @@ import {
   QueryOptions,
   Require_id,
   UpdateQuery,
+  UpdateWithAggregationPipeline,
 } from "mongoose";
 
 export abstract class DateBaseRepository<TDocument> {
@@ -95,6 +96,18 @@ export abstract class DateBaseRepository<TDocument> {
     options?: MongooseUpdateQueryOptions<TDocument> | null;
   }) => {
     return await this.model.updateOne(filter, update, options);
+  };
+
+  updateMany = async ({
+    filter,
+    update,
+    options,
+  }: {
+    filter: QueryFilter<TDocument>;
+    update: UpdateQuery<TDocument> | UpdateWithAggregationPipeline;
+    options?: MongooseUpdateQueryOptions<TDocument>;
+  }) => {
+    return await this.model.updateMany(filter, update, options);
   };
 
   deleteOne = async ({

@@ -42,12 +42,18 @@ class doctorServices {
       specialization,
       slotDuration,
       workingSchedule,
+      phone,
+      address,
+      email,
+      location,
     }: createDoctorDTO = req.body;
 
-    const checkClinic = await this._clinicModel.findOne({
-      filter: { _id: clinic },
-    });
-    if (!checkClinic) throw new NotFoundException("Clinic Not Found");
+    if (clinic) {
+      const checkClinic = await this._clinicModel.findOne({
+        filter: { _id: clinic },
+      });
+      if (!checkClinic) throw new NotFoundException("Clinic Not Found");
+    }
 
     const existingDoctor = await this._doctorModel.findOne({
       filter: { userId: userId ? userId : req.decoded._id },
@@ -101,13 +107,25 @@ class doctorServices {
             specialization,
             userId: user._id,
             workingSchedule,
-            clinic,
             slotDuration,
             consultationFee,
+            ...(clinic && { clinic }),
+            ...(!clinic && {
+              phone: phone ? phone : user.phone,
+              email: email ? email : user.email,
+              address,
+              location,
+            }),
           },
         ],
       });
       if (!doctor) throw new BadRequestException("Failed To Create Doctor");
+      if (clinic) {
+        await this._clinicModel.updateOne({
+          filter: { _id: clinic },
+          update: { $addToSet: { doctors: doctor._id } },
+        });
+      }
       return res.status(201).json({ message: "Doctor Created Successfully" });
     } catch (error) {
       if (key) await deleteFile({ Key: key });
@@ -292,7 +310,19 @@ class doctorServices {
 
     if (!deleteDoctor) throw new BadRequestException("Failed To Delete Doctor");
 
-    if (doctor.doctorImage) {
+    if (doctor.clinic) {
+      const updateClinic = await this._clinicModel.updateOne({
+        filter: { _id: doctor.clinic },
+        update: { $pull: { doctors: doctor._id } },
+      });
+      if (!updateClinic)
+        throw new BadRequestException("Failed To Update Docto's Clinic");
+    }
+
+    if (
+      doctor.doctorImage &&
+      doctor.doctorImage.includes("Doctors/Doctors Image")
+    ) {
       await deleteFile({ Key: doctor.doctorImage });
     }
 

@@ -11,6 +11,11 @@ export interface IDoctor {
   userId: Types.ObjectId;
   clinic?: Types.ObjectId;
 
+  phone?: string;
+  address?: string;
+  location?: string;
+  email?: string;
+
   workingSchedule: {
     day: string;
     from: string;
@@ -100,6 +105,34 @@ export const doctorSchema = new Schema<IDoctor>(
       type: Number,
       default: 30,
       required: true,
+    },
+
+    phone: {
+      type: String,
+      required: function (this: HDoctorDocument) {
+        return this.clinic ? false : true;
+      },
+    },
+
+    email: {
+      type: String,
+      required: function (this: HDoctorDocument) {
+        return this.clinic ? false : true;
+      },
+    },
+
+    address: {
+      type: String,
+      required: function (this: HDoctorDocument) {
+        return this.clinic ? false : true;
+      },
+    },
+
+    location: {
+      type: String,
+      required: function (this: HDoctorDocument) {
+        return this.clinic ? false : true;
+      },
     },
   },
   {

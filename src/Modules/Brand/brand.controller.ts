@@ -74,12 +74,6 @@ router.patch(
 
 router.get(
   "/get-brand-reviews/:brandId",
-  authentication(TokenTypeEnum.ACCESS, [
-    RoleEnum.ADMIN,
-    RoleEnum.COMPANY,
-    RoleEnum.DOCTOR,
-    RoleEnum.USER,
-  ]),
   validation(brandReviewsSchema),
   brandServices.getBrandReviews,
 );
