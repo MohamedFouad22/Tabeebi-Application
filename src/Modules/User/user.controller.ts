@@ -11,6 +11,7 @@ import { validation } from "../../Middleware/validation.middleware";
 import {
   contactUsSchema,
   deleteAccountSchema,
+  disableTwoAuthFactorSchema,
   editProfileSchema,
   freezeAccountSchema,
   restoreAccountSchema,
@@ -82,6 +83,27 @@ router.patch(
     RoleEnum.COMPANY,
   ]),
   userServices.enableTwoAuthFactor,
+);
+router.post(
+  "/disable-two-auth-factor-req",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
+    RoleEnum.DOCTOR,
+    RoleEnum.USER,
+  ]),
+  userServices.disableTwoAuthFactorRequest,
+);
+router.patch(
+  "/disable-two-auth-factor",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
+    RoleEnum.DOCTOR,
+    RoleEnum.USER,
+  ]),
+  validation(disableTwoAuthFactorSchema),
+  userServices.disableTwoAuthFactor,
 );
 router.post(
   "/delete-account-request",

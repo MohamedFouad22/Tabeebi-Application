@@ -29,6 +29,12 @@ export const enableTwoAuthFactorSchema = {
   }),
 };
 
+export const disableTwoAuthFactorSchema = {
+  body: z.strictObject({
+    otp: generalFields.otp,
+  }),
+};
+
 export const deleteAccountSchema = {
   body: z.strictObject({
     otp: generalFields.otp,

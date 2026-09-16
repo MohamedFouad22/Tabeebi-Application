@@ -33,6 +33,7 @@ export interface IUser {
   VerificationAccountExpiredAt: Date;
   changeCredientialsTime?: Date;
   twoAuthFactorEnabledAt?: Date;
+  twoAuthFactorDisabledAt?: Date;
   OTPExpiredAt: Date;
   confirmedAt: Date;
   createdAt: Date;
@@ -140,6 +141,7 @@ export const userSchema = new Schema<IUser>(
     VerificationAccountExpiredAt: Date,
     changeCredientialsTime: Date,
     twoAuthFactorEnabledAt: Date,
+    twoAuthFactorDisabledAt: Date,
     entryPermitPeriod: Date,
     OTPExpiredAt: Date,
     confirmedAt: Date,

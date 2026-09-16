@@ -4,6 +4,7 @@ import { userModel } from "../../DB/Models/user.model";
 import {
   contactUsDTO,
   deleteAccountDTO,
+  disableTwoAuthFactorDTO,
   editProfileDTO,
   enableTwoAuthFactorDTO,
   freezeAccountDTO,
@@ -201,6 +202,94 @@ export class userServices {
     return res
       .status(200)
       .json({ message: "Two Auth Factor Enabled Successfully" });
+  };
+
+  disableTwoAuthFactorRequest = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const otp = await generateOtp();
+
+    const user = await this._userModel.findOneAndUpdate({
+      filter: {
+        email: req.decoded.email,
+        twoFactorAuthStatus: TwoAuthFactorEnum.ACTIVE,
+        twoAuthFactorEnabledAt: { $exists: true },
+      },
+      update: {
+        TwoAuthFactorVerificationCode: await hashData(String(otp)),
+        OTPExpiredAt: new Date(Date.now() + 5 * 60 * 1000),
+      },
+      options: { new: true },
+    });
+    if (!user) throw new BadRequestException("This user has not enabled 2FA");
+
+    eventEmitter.emit("disableTwoAuthFactor", {
+      to: user?.email,
+      code: otp,
+      firstName: user?.userName,
+    });
+    return res
+      .status(200)
+      .json({ message: "An Identity Confirmation Request Has Been Sent" });
+  };
+
+  disableTwoAuthFactor = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { otp }: disableTwoAuthFactorDTO = req.body;
+
+    const checkUser = await this._userModel.findOne({
+      filter: {
+        email: req.decoded.email,
+        twoFactorAuthStatus: TwoAuthFactorEnum.ACTIVE,
+        TwoAuthFactorVerificationCode: { $exists: true },
+        twoAuthFactorEnabledAt: { $exists: true },
+        OTPExpiredAt: { $exists: true },
+      },
+    });
+    if (!checkUser)
+      throw new BadRequestException(
+        "You did not request to disable 2FA, or 2FA is not enabled on your account.",
+      );
+
+    if (checkUser.OTPExpiredAt < new Date(Date.now())) {
+      await this._userModel.updateOne({
+        filter: { email: checkUser?.email },
+        update: {
+          $unset: {
+            TwoAuthFactorVerificationCode: true,
+            OTPExpiredAt: true,
+          },
+        },
+      });
+      throw new BadRequestException("OTP Expired");
+    }
+
+    if (!(await compareData(otp, checkUser.TwoAuthFactorVerificationCode))) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    const user = await this._userModel.updateOne({
+      filter: { email: req.decoded.email },
+      update: {
+        twoFactorAuthStatus: TwoAuthFactorEnum.INACTIVE,
+        $unset: {
+          TwoAuthFactorVerificationCode: true,
+          OTPExpiredAt: true,
+          twoAuthFactorEnabledAt: true,
+        },
+        twoAuthFactorDisabledAt: new Date(Date.now()),
+
+        $inc: { __v: 1 },
+      },
+    });
+    if (!user) throw new BadRequestException("Failed To Disabled 2FA");
+
+    return res
+      .status(200)
+      .json({ message: "Two Auth Factor Disabled Successfully" });
   };
 
   deleteAccountReq = async (req: Request, res: Response): Promise<Response> => {

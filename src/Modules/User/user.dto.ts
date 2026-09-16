@@ -2,6 +2,7 @@ import * as z from "zod";
 import {
   contactUsSchema,
   deleteAccountSchema,
+  disableTwoAuthFactorSchema,
   editProfileSchema,
   enableTwoAuthFactorSchema,
   freezeAccountSchema,
@@ -14,6 +15,9 @@ export type restoreAccountDTO = z.infer<typeof restoreAccountSchema.params>;
 export type editProfileDTO = z.infer<typeof editProfileSchema.body>;
 export type enableTwoAuthFactorDTO = z.infer<
   typeof enableTwoAuthFactorSchema.body
+>;
+export type disableTwoAuthFactorDTO = z.infer<
+  typeof disableTwoAuthFactorSchema.body
 >;
 export type deleteAccountDTO = z.infer<typeof deleteAccountSchema.body>;
 export type inviteUserDTO = z.infer<typeof inviteUserSchema.body>;

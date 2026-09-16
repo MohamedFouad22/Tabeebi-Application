@@ -14,6 +14,7 @@ import { accountDeletedSuccessTemplate } from "../Email/Templates/accountDeleted
 import { inviteUserTemplate } from "../Email/Templates/inviteUser.email";
 import { contactUsTemplate } from "../Email/Templates/contactUs.email";
 import { contactUsConfirmationTemplate } from "../Email/Templates/contactUsUser.email";
+import { disable2faTemplate } from "../Email/Templates/disableTwoAuthFactor.email.utils";
 
 export const eventEmitter = new EventEmitter();
 
@@ -203,5 +204,19 @@ eventEmitter.on("contactUsUser", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Contact US User Email ❌");
+  }
+});
+
+eventEmitter.on("disableTwoAuthFactor", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.TWO_AUTH_FACTOR_REQUEST;
+    data.html = disable2faTemplate(
+      data.code,
+      data.firstName,
+      SubjectEnum.TWO_AUTH_FACTOR_REQUEST,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Disable 2FA Email ❌");
   }
 });

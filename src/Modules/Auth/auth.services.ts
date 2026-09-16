@@ -42,7 +42,6 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
 
 class AuthenticationServices {
   private _userModel = new UserRepository(userModel);
-  private _tokenModel = new TokenRepository(tokenModel);
   constructor() {}
 
   signup = async (req: Request, res: Response): Promise<Response> => {
