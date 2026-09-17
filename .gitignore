@@ -1,3 +1,5 @@
 /config
 /node_modules
 /dist
+/.wwebjs_auth
+./uploads

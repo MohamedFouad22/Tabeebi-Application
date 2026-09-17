@@ -16,6 +16,7 @@ export interface IBooking {
     day: string;
     from: string;
     to: string;
+    isDayOff: boolean;
   };
 
   status: string;
@@ -64,6 +65,10 @@ export const bookingSchema = new Schema<IBooking>(
       },
       to: {
         type: String,
+        required: true,
+      },
+      isDayOff: {
+        type: Boolean,
         required: true,
       },
     },
@@ -128,8 +133,14 @@ bookingSchema.index(
     doctorId: 1,
     bookingDate: 1,
     "workingSchedule.from": 1,
+    "workingSchedule.to": 1,
   },
-  { unique: true },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $ne: statusEnum.CANCELLED },
+    },
+  },
 );
 
 export type HBookDocument = HydratedDocument<IBooking>;
