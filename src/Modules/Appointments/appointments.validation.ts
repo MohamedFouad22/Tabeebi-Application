@@ -44,3 +44,16 @@ export const bookAppointmentSchema = {
       }
     }),
 };
+
+export const getPatientSchema = {
+  params: z
+    .strictObject({
+      patientId: z
+        .string()
+        .refine((value) => {
+          return Types.ObjectId.isValid(value);
+        })
+        .optional(),
+    })
+    .optional(),
+};

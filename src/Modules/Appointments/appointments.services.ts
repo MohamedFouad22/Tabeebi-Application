@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
+  getPatientDTO,
 } from "./appointments.dto";
 import { BookingRepository } from "../../DB/Repositories/booking.repository";
 import { bookingModel } from "../../DB/Models/booking.model";
@@ -10,17 +11,21 @@ import { DoctorRepository } from "../../DB/Repositories/doctor.repository";
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { clinicModel } from "../../DB/Models/clinic.model";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
 import { sendBookingNotification } from "../../Utils/Message/sendWhatsappMessage.utils";
-import { statusEnum } from "../../Utils/Enum/enum.utils";
+import { RoleEnum, statusEnum } from "../../Utils/Enum/enum.utils";
+import { UserRepository } from "../../DB/Repositories/user.repository";
+import { userModel } from "../../DB/Models/user.model";
 
 class appointmentRouterServices {
   private _bookModel = new BookingRepository(bookingModel);
   private _doctorModel = new DoctorRepository(doctorModel);
   private _clinicModel = new ClinicRepository(clinicModel);
+  private _userModel = new UserRepository(userModel);
   constructor() {}
 
   bookAppointment = async (req: Request, res: Response): Promise<Response> => {
@@ -188,6 +193,69 @@ class appointmentRouterServices {
 
       throw error;
     }
+  };
+
+  getPatientHistory = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { patientId } = req.params;
+
+    let user;
+
+    if (req.user.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    } else {
+      user = patientId || req.decoded._id;
+    }
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const patient = await this._userModel.findOne({
+      filter: { _id: user },
+    });
+    if (!patient) throw new NotFoundException("User Not Found");
+
+    const [history, total] = await Promise.all([
+      this._bookModel.find({
+        filter: { patientId: user },
+        projection: "-__v -createdAt -updatedAt",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+          populate: [
+            {
+              path: "patientId",
+              select: "firstName lastName email",
+            },
+            {
+              path: "doctorId",
+              select: "doctorName specialization",
+            },
+          ],
+        },
+      }),
+
+      this._bookModel.countDocuments({ filter: { patientId: user } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      message: "Get History Successfully",
+      Pagination: {
+        totalPages,
+        total,
+        limit,
+        skip,
+        currentPage: page,
+      },
+      history,
+    });
   };
 }
 export default new appointmentRouterServices();
