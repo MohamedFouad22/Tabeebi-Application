@@ -31,6 +31,8 @@ export interface IBooking {
   phone: string;
   patientName: string;
 
+  bookingDateExpiredAt?: Date;
+
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -120,6 +122,8 @@ export const bookingSchema = new Schema<IBooking>(
       type: String,
       required: true,
     },
+
+    bookingDateExpiredAt: Date,
   },
   {
     timestamps: true,
@@ -142,6 +146,7 @@ bookingSchema.index(
     },
   },
 );
+bookingSchema.index({ bookingDateExpiredAt: 1 }, { expireAfterSeconds: 0 });
 
 export type HBookDocument = HydratedDocument<IBooking>;
 export const bookingModel = models.Booking || model("Booking", bookingSchema);

@@ -49,22 +49,55 @@ class appointmentRouterServices {
       if (!clinic) throw new NotFoundException("Clinic Not Found");
     }
 
-    const { day, from, to, isDayOff } = workingSchedule;
-
-    if (isDayOff) {
-      throw new BadRequestException("This is the doctor's day off");
-    }
-
-    const checkAppointment = doctor.workingSchedule.some(
-      (schedule) =>
-        schedule.day === day &&
-        schedule.from === from &&
-        schedule.to === to &&
-        schedule.isDayOff === false,
+    const { day, from, to } = workingSchedule;
+    const doctorShift = doctor.workingSchedule.find(
+      (schedule) => schedule.day === day && schedule.isDayOff === false,
     );
 
-    if (!checkAppointment) {
-      throw new BadRequestException("This day is not on the doctor's schedule");
+    if (!doctorShift) {
+      throw new BadRequestException(
+        "This day is not on the doctor's schedule or it's a day off",
+      );
+    }
+
+    const timeToMinutes = (timeStr: string): number => {
+      const [hoursStr = "0", minutesStr = "0"] = timeStr.split(":");
+      const hours = Number(hoursStr);
+      const minutes = Number(minutesStr);
+
+      return hours * 60 + minutes;
+    };
+
+    const requestFromMin = timeToMinutes(from);
+    const requestToMin = timeToMinutes(to);
+    const shiftFromMin = timeToMinutes(doctorShift.from);
+    const shiftToMin = timeToMinutes(doctorShift.to);
+
+    if (
+      requestFromMin < shiftFromMin ||
+      requestToMin > shiftToMin ||
+      requestFromMin >= requestToMin
+    ) {
+      throw new BadRequestException(
+        "Requested time range falls outside of doctor's working hours",
+      );
+    }
+
+    const duration = requestToMin - requestFromMin;
+    if (doctor.slotDuration && duration !== doctor.slotDuration) {
+      throw new BadRequestException(
+        `Appointment duration must be exactly ${doctor.slotDuration} minutes`,
+      );
+    }
+
+    const offsetFromShiftStart = requestFromMin - shiftFromMin;
+    if (
+      doctor.slotDuration &&
+      offsetFromShiftStart % doctor.slotDuration !== 0
+    ) {
+      throw new BadRequestException(
+        `Appointment start time is not aligned with the doctor's ${doctor.slotDuration}-minute slot intervals`,
+      );
     }
 
     const targetDate = new Date();
@@ -83,6 +116,9 @@ class appointmentRouterServices {
     const endOfDay = new Date(targetDate);
     endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
 
+    const bookingExpiryDate = new Date(targetDate);
+    bookingExpiryDate.setUTCHours(23, 59, 59, 999);
+
     const checkAvailableAppointment = await this._bookModel.findOne({
       filter: {
         doctorId,
@@ -98,7 +134,7 @@ class appointmentRouterServices {
 
     if (checkAvailableAppointment) {
       throw new ConflictException(
-        "This appointment has been booked by someone else",
+        "This appointment slot has been booked by someone else",
       );
     }
 
@@ -116,6 +152,7 @@ class appointmentRouterServices {
             paymentStatus,
             paymentMethod,
             bookingDate: targetDate,
+            bookingDateExpiredAt: bookingExpiryDate,
             email,
             phone,
             patientName,
