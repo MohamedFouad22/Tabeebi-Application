@@ -31,4 +31,6 @@ router.get(
   validation(getPatientSchema),
   appointmentRouterServices.getPatientHistory,
 );
+
+router.get("/get-appointments/:appointmentId" , authentication(TokenTypeEnum.ACCESS,[RoleEnum.ADMIN,RoleEnum.DOCTOR,RoleEnum.USER]),validation(),appointmentRouterServices.getAppointment)
 export default router;
