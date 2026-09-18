@@ -1,11 +1,12 @@
 import { Router } from "express";
 const router: Router = Router();
-import appointmentRouterServices from "./appointments.services";
+import appointmentServices from "./appointments.services";
 import { authentication } from "../../Middleware/authentication.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
   bookAppointmentSchema,
+  getAppointmentSchema,
   getPatientSchema,
 } from "./appointments.validation";
 
@@ -18,7 +19,7 @@ router.post(
     RoleEnum.USER,
   ]),
   validation(bookAppointmentSchema),
-  appointmentRouterServices.bookAppointment,
+  appointmentServices.bookAppointment,
 );
 
 router.get(
@@ -29,8 +30,17 @@ router.get(
     RoleEnum.USER,
   ]),
   validation(getPatientSchema),
-  appointmentRouterServices.getPatientHistory,
+  appointmentServices.getPatientHistory,
 );
 
-router.get("/get-appointments/:appointmentId" , authentication(TokenTypeEnum.ACCESS,[RoleEnum.ADMIN,RoleEnum.DOCTOR,RoleEnum.USER]),validation(),appointmentRouterServices.getAppointment)
+router.get(
+  "/get-appointment/:appointmentId",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+    RoleEnum.USER,
+  ]),
+  validation(getAppointmentSchema),
+  appointmentServices.getAppointment,
+);
 export default router;

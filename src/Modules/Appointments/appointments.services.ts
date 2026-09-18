@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
+  getAppointmentDTO,
   getPatientDTO,
 } from "./appointments.dto";
 import { BookingRepository } from "../../DB/Repositories/booking.repository";
@@ -21,7 +22,7 @@ import { RoleEnum, statusEnum } from "../../Utils/Enum/enum.utils";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 
-class appointmentRouterServices {
+class appointmentServices {
   private _bookModel = new BookingRepository(bookingModel);
   private _doctorModel = new DoctorRepository(doctorModel);
   private _clinicModel = new ClinicRepository(clinicModel);
@@ -259,7 +260,42 @@ class appointmentRouterServices {
   };
 
   getAppointment = async (req: Request, res: Response): Promise<Response> => {
-    return res.status(200).json({ message: "Get Appointment Successfully" });
+    const { appointmentId } = req.params as getAppointmentDTO;
+    const book = await this._bookModel.findOne({
+      filter: { _id: appointmentId },
+      projection: "-createdAt -updatedAt -__v",
+      options: {
+        populate: [
+          {
+            path: "doctorId",
+            select: "doctorName specialization email",
+          },
+          {
+            path: "patientId",
+            select: "firstName lastName email",
+          },
+        ],
+      },
+    });
+    if (!book) throw new NotFoundException("Book Not Found");
+
+    const user = req.decoded._id;
+    const role = req.user.role;
+
+    if (role === RoleEnum.USER) {
+      if (user !== book.patientId._id) {
+        throw new ForbiddenException("Not Allowed For You To Get Book Data");
+      }
+    }
+    if (role === RoleEnum.DOCTOR) {
+      if (user !== book.doctorId._id) {
+        throw new ForbiddenException("Not Allowed For You To Get Book Data");
+      }
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Get Appointment Successfully", book });
   };
 }
-export default new appointmentRouterServices();
+export default new appointmentServices();

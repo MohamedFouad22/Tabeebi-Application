@@ -57,3 +57,14 @@ export const getPatientSchema = {
     })
     .optional(),
 };
+
+export const getAppointmentSchema = {
+  params: z
+    .strictObject({
+      appointmentId: z
+        .string()
+        .refine((value) => {
+          return Types.ObjectId.isValid(value);
+        })
+    })
+};
