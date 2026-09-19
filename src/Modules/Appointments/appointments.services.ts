@@ -5,6 +5,8 @@ import {
   getAppointmentDTO,
   getDoctorHistoryDTO,
   getPatientDTO,
+  rescheduledAppointmentDTO,
+  rescheduledAppointmentParamsDTO,
 } from "./appointments.dto";
 import { BookingRepository } from "../../DB/Repositories/booking.repository";
 import { bookingModel } from "../../DB/Models/booking.model";
@@ -335,6 +337,73 @@ class appointmentServices {
       Pagination: { currentPage: page, limit, skip, total, totalPages },
       history,
     });
+  };
+
+  rescheduleAppointment = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { appointmentId, patientId, doctorId } =
+      req.params as rescheduledAppointmentParamsDTO;
+    const { workingSchedule }: rescheduledAppointmentDTO = req.body;
+    const { day, from, to, isDayOff } = workingSchedule;
+    const filter: Record<string, any> = { _id: appointmentId };
+
+    if (req.decoded.role === RoleEnum.USER) {
+      filter.patientId = req.decoded._id;
+      filter.doctorId = doctorId;
+    }
+
+    if (req.decoded.role === RoleEnum.DOCTOR) {
+      filter.doctorId = req.decoded._id;
+      if (patientId) {
+        filter.patientId = patientId;
+      }
+    }
+
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      if (patientId) filter.patientId = patientId;
+      if (doctorId) filter.doctorId = doctorId;
+    }
+
+    if (workingSchedule.isDayOff === true) {
+      throw new BadRequestException("This Day Is Day Off For Doctor");
+    }
+
+    const targetDate = new Date();
+    while (
+      targetDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: "UTC",
+      }) !== day
+    ) {
+      targetDate.setUTCDate(targetDate.getUTCDate() + 1);
+    }
+    targetDate.setUTCHours(0, 0, 0, 0);
+
+    const appointment = await this._bookModel.findOneAndUpdate({
+      filter,
+      update: {
+        $set: {
+          "workingSchedule.day": day,
+          "workingSchedule.from": from,
+          "workingSchedule.to": to,
+          "workingSchedule.isDayOff": isDayOff,
+          bookingDate: targetDate,
+        },
+        $inc: { __v: 1 },
+      },
+      options: { new: true },
+    });
+
+    if (!appointment)
+      throw new BadRequestException(
+        "Failed To Rescheduled Appointment Or Book Not Found",
+      );
+
+    return res
+      .status(200)
+      .json({ message: "Appointment Rescheduled Successfully" });
   };
 }
 export default new appointmentServices();

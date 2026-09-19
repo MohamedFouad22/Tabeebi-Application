@@ -79,3 +79,31 @@ export const getDoctorHistorySchema = {
       .optional(),
   }),
 };
+
+export const rescheduledAppointmentSchema = {
+  params: z.strictObject({
+    appointmentId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+    patientId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+    doctorId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+  body: z.strictObject({
+    workingSchedule: z.object({
+      day: z.string(),
+      from: z.string(),
+      to: z.string(),
+      isDayOff: z.boolean(),
+    }),
+  }),
+};

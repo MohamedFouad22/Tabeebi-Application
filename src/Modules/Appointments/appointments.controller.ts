@@ -9,6 +9,7 @@ import {
   getAppointmentSchema,
   getDoctorHistorySchema,
   getPatientSchema,
+  rescheduledAppointmentSchema,
 } from "./appointments.validation";
 
 router.post(
@@ -46,5 +47,16 @@ router.get(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.DOCTOR, RoleEnum.ADMIN]),
   validation(getDoctorHistorySchema),
   appointmentServices.getDoctorHistory,
+);
+
+router.patch(
+  "/reschedule-appointment/:appointmentId{/:patientId}{/:doctorId}",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.USER,
+    RoleEnum.DOCTOR,
+  ]),
+  validation(rescheduledAppointmentSchema),
+  appointmentServices.rescheduleAppointment,
 );
 export default router;
