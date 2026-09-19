@@ -3,6 +3,7 @@ import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
   getAppointmentDTO,
+  getDoctorHistoryDTO,
   getPatientDTO,
 } from "./appointments.dto";
 import { BookingRepository } from "../../DB/Repositories/booking.repository";
@@ -149,7 +150,7 @@ class appointmentServices {
         data: [
           {
             patientId: req.decoded._id,
-            doctorId,
+            doctorId: doctor.userId,
             clinicId: req.body.clinicId || undefined,
             workingSchedule,
             status,
@@ -202,26 +203,23 @@ class appointmentServices {
   ): Promise<Response> => {
     const { patientId } = req.params;
 
-    let user;
+    const filter: Record<string, any> = {};
 
-    if (req.user.role === RoleEnum.USER) {
-      user = req.decoded._id;
-    } else {
-      user = patientId || req.decoded._id;
+    if (patientId) {
+      filter.patientId = patientId;
+    }
+
+    if (req.decoded.role === RoleEnum.USER) {
+      filter.patientId = req.decoded._id;
     }
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
     const skip = (page - 1) * limit;
 
-    const patient = await this._userModel.findOne({
-      filter: { _id: user },
-    });
-    if (!patient) throw new NotFoundException("User Not Found");
-
     const [history, total] = await Promise.all([
       this._bookModel.find({
-        filter: { patientId: user },
+        filter,
         projection: "-__v -createdAt -updatedAt",
         options: {
           page,
@@ -241,14 +239,14 @@ class appointmentServices {
         },
       }),
 
-      this._bookModel.countDocuments({ filter: { patientId: user } }),
+      this._bookModel.countDocuments({ filter }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       message: "Get History Successfully",
-      Pagination: {
+      pagination: {
         totalPages,
         total,
         limit,
@@ -261,41 +259,82 @@ class appointmentServices {
 
   getAppointment = async (req: Request, res: Response): Promise<Response> => {
     const { appointmentId } = req.params as getAppointmentDTO;
+
+    const filter: Record<string, any> = { _id: appointmentId };
+
+    if (req.decoded.role === RoleEnum.USER) {
+      filter.patientId = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.DOCTOR) {
+      filter.doctorId = req.decoded._id;
+    }
+
     const book = await this._bookModel.findOne({
-      filter: { _id: appointmentId },
+      filter,
       projection: "-createdAt -updatedAt -__v",
       options: {
         populate: [
           {
-            path: "doctorId",
-            select: "doctorName specialization email",
-          },
-          {
             path: "patientId",
             select: "firstName lastName email",
+          },
+          {
+            path: "doctorId",
+            select: "doctorName email specialization",
           },
         ],
       },
     });
-    if (!book) throw new NotFoundException("Book Not Found");
 
-    const user = req.decoded._id;
-    const role = req.user.role;
-
-    if (role === RoleEnum.USER) {
-      if (user !== book.patientId._id) {
-        throw new ForbiddenException("Not Allowed For You To Get Book Data");
-      }
-    }
-    if (role === RoleEnum.DOCTOR) {
-      if (user !== book.doctorId._id) {
-        throw new ForbiddenException("Not Allowed For You To Get Book Data");
-      }
+    if (!book) {
+      throw new NotFoundException("Appointment not found or access denied");
     }
 
     return res
       .status(200)
       .json({ message: "Get Appointment Successfully", book });
+  };
+
+  getDoctorHistory = async (req: Request, res: Response): Promise<Response> => {
+    const { doctorId, patientId } = req.params as getDoctorHistoryDTO;
+
+    const filter: Record<string, any> = { doctorId };
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    if (patientId) {
+      filter.patientId = patientId;
+    }
+
+    if (req.decoded.role === RoleEnum.DOCTOR) {
+      filter.doctorId = req.decoded._id;
+    }
+
+    const [history, total] = await Promise.all([
+      this._bookModel.find({
+        filter,
+        projection: "-createdAt -updatedAt -__v",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+          populate: [
+            { path: "doctorId", select: "firstName lastName email" },
+            { path: "patientId", select: "firstName lastName email" },
+          ],
+        },
+      }),
+      this._bookModel.countDocuments({ filter }),
+    ]);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      message: "Get History Successfully",
+      Pagination: { currentPage: page, limit, skip, total, totalPages },
+      history,
+    });
   };
 }
 export default new appointmentServices();

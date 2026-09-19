@@ -47,7 +47,7 @@ export const bookingSchema = new Schema<IBooking>(
 
     doctorId: {
       type: Types.ObjectId,
-      ref: "Doctor",
+      ref: "User",
       required: true,
     },
 

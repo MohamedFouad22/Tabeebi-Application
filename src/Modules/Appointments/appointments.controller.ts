@@ -7,6 +7,7 @@ import { validation } from "../../Middleware/validation.middleware";
 import {
   bookAppointmentSchema,
   getAppointmentSchema,
+  getDoctorHistorySchema,
   getPatientSchema,
 } from "./appointments.validation";
 
@@ -24,11 +25,7 @@ router.post(
 
 router.get(
   "/get-patient{/:patientId}",
-  authentication(TokenTypeEnum.ACCESS, [
-    RoleEnum.ADMIN,
-    RoleEnum.DOCTOR,
-    RoleEnum.USER,
-  ]),
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.USER]),
   validation(getPatientSchema),
   appointmentServices.getPatientHistory,
 );
@@ -42,5 +39,12 @@ router.get(
   ]),
   validation(getAppointmentSchema),
   appointmentServices.getAppointment,
+);
+
+router.get(
+  "/doctor-history/:doctorId{/:patientId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.DOCTOR, RoleEnum.ADMIN]),
+  validation(getDoctorHistorySchema),
+  appointmentServices.getDoctorHistory,
 );
 export default router;

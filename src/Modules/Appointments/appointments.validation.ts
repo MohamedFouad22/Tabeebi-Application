@@ -59,12 +59,23 @@ export const getPatientSchema = {
 };
 
 export const getAppointmentSchema = {
-  params: z
-    .strictObject({
-      appointmentId: z
-        .string()
-        .refine((value) => {
-          return Types.ObjectId.isValid(value);
-        })
-    })
+  params: z.strictObject({
+    appointmentId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
+
+export const getDoctorHistorySchema = {
+  params: z.strictObject({
+    doctorId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+    patientId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
 };
