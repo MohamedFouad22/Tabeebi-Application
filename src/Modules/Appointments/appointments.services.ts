@@ -3,6 +3,7 @@ import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
   cancelAppointmentDTO,
+  deleteAppointmentDTO,
   getAppointmentDTO,
   getDoctorHistoryDTO,
   getPatientDTO,
@@ -489,6 +490,21 @@ class appointmentServices {
     return res
       .status(200)
       .json({ message: "Appointment Status Updated Successfully" });
+  };
+
+  deleteAppointment = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { appointmentId } = req.params as deleteAppointmentDTO;
+    const filter: Record<string, any> = { _id: appointmentId };
+
+    const deleteBook = await this._bookModel.findOneAndDelete({ filter });
+    if (!deleteBook) throw new NotFoundException("Appointment not found");
+
+    return res
+      .status(200)
+      .json({ message: "Appointment Deleted Successfully" });
   };
 }
 export default new appointmentServices();

@@ -126,3 +126,11 @@ export const updateAppointmentSchema = {
     status: z.enum([statusEnum.CONFIRMED, statusEnum.COMPLETED]),
   }),
 };
+
+export const deleteAppointmentSchema = {
+  params: z.strictObject({
+    appointmentId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
