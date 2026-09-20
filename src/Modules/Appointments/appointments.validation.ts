@@ -107,3 +107,22 @@ export const rescheduledAppointmentSchema = {
     }),
   }),
 };
+
+export const cancelAppointmentSchema = {
+  params: z.strictObject({
+    appointmentId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
+
+export const updateAppointmentSchema = {
+  params: z.strictObject({
+    appointmentId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z.strictObject({
+    status: z.enum([statusEnum.CONFIRMED, statusEnum.COMPLETED]),
+  }),
+};

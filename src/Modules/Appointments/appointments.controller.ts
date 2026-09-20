@@ -6,17 +6,18 @@ import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
   bookAppointmentSchema,
+  cancelAppointmentSchema,
   getAppointmentSchema,
   getDoctorHistorySchema,
   getPatientSchema,
   rescheduledAppointmentSchema,
+  updateAppointmentSchema,
 } from "./appointments.validation";
 
 router.post(
   "/book-appointment/:doctorId",
   authentication(TokenTypeEnum.ACCESS, [
     RoleEnum.ADMIN,
-    RoleEnum.COMPANY,
     RoleEnum.DOCTOR,
     RoleEnum.USER,
   ]),
@@ -58,5 +59,23 @@ router.patch(
   ]),
   validation(rescheduledAppointmentSchema),
   appointmentServices.rescheduleAppointment,
+);
+
+router.patch(
+  "/cancel-appointment/:appointmentId",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.DOCTOR,
+    RoleEnum.USER,
+  ]),
+  validation(cancelAppointmentSchema),
+  appointmentServices.canceledAppointment,
+);
+
+router.patch(
+  "/update-status/:appointmentId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  validation(updateAppointmentSchema),
+  appointmentServices.updateAppointmentStatus,
 );
 export default router;

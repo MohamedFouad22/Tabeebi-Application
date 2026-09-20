@@ -2,11 +2,14 @@ import { Request, Response } from "express";
 import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
+  cancelAppointmentDTO,
   getAppointmentDTO,
   getDoctorHistoryDTO,
   getPatientDTO,
   rescheduledAppointmentDTO,
   rescheduledAppointmentParamsDTO,
+  updateAppointmentDTO,
+  updateAppointmentParamsDTO,
 } from "./appointments.dto";
 import { BookingRepository } from "../../DB/Repositories/booking.repository";
 import { bookingModel } from "../../DB/Models/booking.model";
@@ -21,7 +24,11 @@ import {
 import { clinicModel } from "../../DB/Models/clinic.model";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
 import { sendBookingNotification } from "../../Utils/Message/sendWhatsappMessage.utils";
-import { RoleEnum, statusEnum } from "../../Utils/Enum/enum.utils";
+import {
+  PaymentStatusEnum,
+  RoleEnum,
+  statusEnum,
+} from "../../Utils/Enum/enum.utils";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 
@@ -404,6 +411,84 @@ class appointmentServices {
     return res
       .status(200)
       .json({ message: "Appointment Rescheduled Successfully" });
+  };
+
+  canceledAppointment = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { appointmentId } = req.params as cancelAppointmentDTO;
+    const filter: Record<string, any> = {
+      _id: appointmentId,
+      status: statusEnum.PENDING,
+    };
+
+    if (req.decoded.role === RoleEnum.USER) {
+      filter.patientId = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.DOCTOR) {
+      filter.doctorId = req.decoded._id;
+    }
+
+    const updateAppointment = await this._bookModel.findOneAndUpdate({
+      filter,
+      update: {
+        status: statusEnum.CANCELLED,
+        $unset: {
+          bookingDate: true,
+          workingSchedule: true,
+          bookingDateExpiredAt: true,
+        },
+        $inc: { __v: 1 },
+      },
+    });
+    if (!updateAppointment)
+      throw new NotFoundException(
+        "Failed To Update Appointment Or Is It No Longer Possible To Cancel The Appointment",
+      );
+
+    return res
+      .status(200)
+      .json({ message: "Appointment Canceled Successfully" });
+  };
+
+  updateAppointmentStatus = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { appointmentId } = req.params as updateAppointmentParamsDTO;
+    const { status }: updateAppointmentDTO = req.body;
+
+    const filter: Record<string, any> = { _id: appointmentId };
+    const update: Record<string, any> = { status, $inc: { __v: 1 } };
+
+    if (req.decoded.role === RoleEnum.DOCTOR) {
+      filter.doctorId = req.decoded._id;
+    }
+
+    if (status === statusEnum.CONFIRMED) {
+      filter.status = statusEnum.PENDING;
+    } else if (status === statusEnum.COMPLETED) {
+      filter.status = statusEnum.CONFIRMED;
+      update.$unset = {
+        bookingDate: true,
+        bookingDateExpiredAt: true,
+        workingSchedule: true,
+      };
+      update.paymentStatus = PaymentStatusEnum.PAID;
+    }
+
+    const updateBook = await this._bookModel.findOneAndUpdate({
+      filter,
+      update,
+    });
+    if (!updateBook)
+      throw new NotFoundException(
+        "Appointment Not Found Or Invalid Status Transition",
+      );
+
+    return res
+      .status(200)
+      .json({ message: "Appointment Status Updated Successfully" });
   };
 }
 export default new appointmentServices();
