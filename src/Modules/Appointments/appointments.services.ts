@@ -6,7 +6,6 @@ import {
   deleteAppointmentDTO,
   getAppointmentDTO,
   getDoctorHistoryDTO,
-  getPatientDTO,
   rescheduledAppointmentDTO,
   rescheduledAppointmentParamsDTO,
   updateAppointmentDTO,
@@ -19,7 +18,6 @@ import { DoctorRepository } from "../../DB/Repositories/doctor.repository";
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { clinicModel } from "../../DB/Models/clinic.model";
