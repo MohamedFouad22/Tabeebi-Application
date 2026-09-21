@@ -134,3 +134,11 @@ export const deleteAppointmentSchema = {
     }),
   }),
 };
+
+export const checkoutAppointmentSchema = {
+  params: z.strictObject({
+    appointmentId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

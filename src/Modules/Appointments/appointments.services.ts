@@ -3,6 +3,7 @@ import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
   cancelAppointmentDTO,
+  checkoutAppointmentDTO,
   deleteAppointmentDTO,
   getAppointmentDTO,
   getDoctorHistoryDTO,
@@ -24,12 +25,14 @@ import { clinicModel } from "../../DB/Models/clinic.model";
 import { ClinicRepository } from "../../DB/Repositories/clinic.repository";
 import { sendBookingNotification } from "../../Utils/Message/sendWhatsappMessage.utils";
 import {
+  PaymentMethodEnum,
   PaymentStatusEnum,
   RoleEnum,
   statusEnum,
 } from "../../Utils/Enum/enum.utils";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
+import StripeServices from "../../Utils/Payments/Stripe/stripe.payment.utils";
 
 class appointmentServices {
   private _bookModel = new BookingRepository(bookingModel);
@@ -503,6 +506,65 @@ class appointmentServices {
     return res
       .status(200)
       .json({ message: "Appointment Deleted Successfully" });
+  };
+
+  checkoutAppointment = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { appointmentId } = req.params as checkoutAppointmentDTO;
+
+    const book = await this._bookModel.findOne({
+      filter: {
+        _id: appointmentId,
+        status: statusEnum.PENDING,
+        paymentStatus: PaymentStatusEnum.UNPAID,
+        paymentMethod: PaymentMethodEnum.CARD,
+      },
+      options: {
+        populate: [{ path: "patientId", select: "firstName lastName email" }],
+      },
+    });
+    if (!book)
+      throw new NotFoundException(
+        "Book Not Found Or Not Allowed To Online Payment",
+      );
+
+    const doctor = await this._doctorModel.findOne({
+      filter: { userId: book.doctorId },
+    });
+    if (!doctor) throw new NotFoundException("Doctor Not Found");
+
+    const amount = book.consultationFee;
+    const line_items = [
+      {
+        price_data: {
+          currency: "egp",
+          product_data: {
+            name: `Doctor : ${doctor.doctorName}`,
+            description: `Specialization : ${doctor.specialization}\nBio : ${doctor.bio}`,
+          },
+          unit_amount: amount * 100,
+        },
+        quantity: 1,
+      },
+    ];
+
+    const session = await StripeServices.createSession({
+      customer_email: `${req.decoded.email}`,
+      line_items,
+      metadata: {
+        book_id: appointmentId.toString(),
+        doctorId: doctor._id.toString(),
+      },
+      mode: "payment",
+      discounts: [],
+    });
+
+    return res.status(200).json({
+      message: "Checkout Session Created Successfully",
+      session: { url: session.url },
+    });
   };
 }
 export default new appointmentServices();

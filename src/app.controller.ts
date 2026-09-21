@@ -3,6 +3,7 @@ import { Express } from "express";
 import { connectionDB } from "./DB/connect";
 import path from "node:path";
 import dotenv from "dotenv";
+dotenv.config({ path: `${path.resolve()}/config/.env.dev` });
 import helmet from "helmet";
 import cors from "cors";
 import { rateLimit } from "express-rate-limit";
@@ -16,7 +17,6 @@ import productRouter from "./Modules/Product/product.controller";
 import clinicRouter from "./Modules/Clinic/clinic.controller";
 import doctorRouter from "./Modules/Doctor/doctor.controller";
 import appointmentRouter from "./Modules/Appointments/appointments.controller";
-dotenv.config({ path: `${path.resolve()}/config/.env.dev` });
 
 const limit = rateLimit({
   limit: 200,
