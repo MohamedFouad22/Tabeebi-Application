@@ -33,6 +33,7 @@ import {
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import StripeServices from "../../Utils/Payments/Stripe/stripe.payment.utils";
+import Stripe from "stripe";
 
 class appointmentServices {
   private _bookModel = new BookingRepository(bookingModel);
@@ -544,7 +545,7 @@ class appointmentServices {
             name: `Doctor : ${doctor.doctorName}`,
             description: `Specialization : ${doctor.specialization}\nBio : ${doctor.bio}`,
           },
-          unit_amount: amount * 100,
+          unit_amount: Math.round(amount * 100),
         },
         quantity: 1,
       },
@@ -565,6 +566,59 @@ class appointmentServices {
       message: "Checkout Session Created Successfully",
       session: { url: session.url },
     });
+  };
+
+  webhooksStripe = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const signature = req.headers["stripe-signature"] as string;
+
+      if (!signature) {
+        throw new BadRequestException("Missing stripe-signature header");
+      }
+
+      const event = StripeServices.constructEvent({
+        payload: req.body,
+        signature,
+        secret: process.env.STRIPE_WEBHOOK_SECRET as string,
+      });
+
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const book_id = session.metadata?.book_id;
+
+        if (book_id) {
+          try {
+            const updateResult = await this._bookModel.updateOne({
+              filter: { _id: book_id },
+              update: {
+                $unset: { slotDuration: true, bookingDateExpiredAt: true },
+                $set: {
+                  status: statusEnum.CONFIRMED,
+                  paymentStatus: PaymentStatusEnum.PAID,
+                },
+              },
+            });
+
+            if (updateResult.matchedCount === 0) {
+              console.warn(`⚠️ No booking found in DB for ID: ${book_id}`);
+            } else {
+              console.log(`✅ Appointment ${book_id} confirmed and paid.`);
+            }
+          } catch (dbError: any) {
+            console.error("❌ DB Update Error in Webhook:", dbError.message);
+          }
+        } else {
+          console.warn(
+            "⚠️ Checkout Session completed without 'book_id' in metadata.",
+          );
+        }
+      }
+
+      return res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error("❌ Webhook Error:", error.message);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
   };
 }
 export default new appointmentServices();

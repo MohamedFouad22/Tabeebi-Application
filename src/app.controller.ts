@@ -29,6 +29,10 @@ export const bootstrap = async () => {
   const app: Express = express();
   const port: number = Number(process.env.PORT) || 5000;
 
+  app.use(
+    process.env.STRIPE_WEBHOOK_URL as string,
+    express.raw({ type: "application/json" }),
+  );
   app.use(express.json());
   await connectionDB();
   app.use(cors(), helmet(), limit, hpp());

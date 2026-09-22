@@ -26,5 +26,17 @@ class StripeServices {
     });
     return session;
   }
+
+  constructEvent({
+    payload,
+    signature,
+    secret = process.env.STRIPE_WEBHOOK_SECRET as string,
+  }: {
+    payload: string | Buffer;
+    signature: string;
+    secret?: string;
+  }): Stripe.Event {
+    return this.stripe.webhooks.constructEvent(payload, signature, secret);
+  }
 }
 export default new StripeServices();

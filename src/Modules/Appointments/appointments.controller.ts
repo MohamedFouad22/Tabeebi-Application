@@ -1,3 +1,4 @@
+import express from "express";
 import { Router } from "express";
 const router: Router = Router();
 import appointmentServices from "./appointments.services";
@@ -94,4 +95,6 @@ router.post(
   validation(checkoutAppointmentSchema),
   appointmentServices.checkoutAppointment,
 );
+
+router.post("/webhooks-stripe", appointmentServices.webhooksStripe);
 export default router;
