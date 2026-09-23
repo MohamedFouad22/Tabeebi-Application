@@ -6,9 +6,11 @@ import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
   createCouponSchema,
+  deleteCouponSchema,
   getCouponSchema,
   updateCouponSchema,
 } from "./coupon.validation";
+import couponServices from "./coupon.services";
 
 router.post(
   "/create-coupon",
@@ -51,6 +53,17 @@ router.patch(
   ]),
   validation(updateCouponSchema),
   CouponServices.updateCoupon,
+);
+
+router.delete(
+  "/delete-coupon/:couponId",
+  authentication(TokenTypeEnum.ACCESS, [
+    RoleEnum.ADMIN,
+    RoleEnum.COMPANY,
+    RoleEnum.DOCTOR,
+  ]),
+  validation(deleteCouponSchema),
+  couponServices.deleteCoupon,
 );
 
 export default router;

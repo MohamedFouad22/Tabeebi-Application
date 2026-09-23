@@ -90,3 +90,11 @@ export const updateCouponSchema = {
       },
     ),
 };
+
+export const deleteCouponSchema = {
+  params: z.strictObject({
+    couponId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  deleteCouponDTO,
   getCouponDTO,
   IcreateCouponDTO,
   updateCouponDTO,
@@ -181,6 +182,27 @@ class CouponServices {
     if (!coupon) throw new BadRequestException("Failed To Update Coupon");
 
     return res.status(200).json({ message: "Coupon Updated Successfully" });
+  };
+
+  deleteCoupon = async (req: Request, res: Response): Promise<Response> => {
+    const { couponId } = req.params as deleteCouponDTO;
+    const filter: Record<string, any> = {
+      _id: couponId,
+      ...(req.decoded.role !== RoleEnum.ADMIN && {
+        createdBy: req.decoded._id,
+      }),
+    };
+
+    const checkCoupon = await this._couponModel.findOne({ filter });
+    if (!checkCoupon)
+      throw new NotFoundException(
+        "Coupon Not Found Or Not Allowed For You To Delete Coupon",
+      );
+
+    const coupon = await this._couponModel.deleteOne({ filter });
+    if (!coupon) throw new BadRequestException("Failed To Delete Coupon");
+
+    return res.status(200).json({ message: "Coupon Deleted Successfully" });
   };
 }
 export default new CouponServices();
