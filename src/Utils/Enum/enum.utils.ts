@@ -88,6 +88,12 @@ export enum PaymentStatusEnum {
   REFUNDED = "REFUNDED",
 }
 
+export enum couponStatusEnum {
+  ACTIVE = "ACTIVE",
+  EXPIRED = "EXPIRED",
+  PENDING = "PENDING",
+}
+
 export enum SubjectEnum {
   CONFIRM_EMAIL = "Please Confirm Your Email",
   WELCOME_EMAIL = "Welcome To The Tabeebi Application",

@@ -17,6 +17,7 @@ import productRouter from "./Modules/Product/product.controller";
 import clinicRouter from "./Modules/Clinic/clinic.controller";
 import doctorRouter from "./Modules/Doctor/doctor.controller";
 import appointmentRouter from "./Modules/Appointments/appointments.controller";
+import couponRouter from "./Modules/Coupon/coupon.controller";
 
 const limit = rateLimit({
   limit: 200,
@@ -45,6 +46,7 @@ export const bootstrap = async () => {
   app.use("/api/v1/clinic", clinicRouter);
   app.use("/api/v1/doctor", doctorRouter);
   app.use("/api/v1/appointment", appointmentRouter);
+  app.use("/api/v1/coupon", couponRouter);
 
   app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({ message: "Hello From Tabeebi App" });
