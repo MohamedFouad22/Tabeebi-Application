@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import * as z from "zod";
+import { couponStatusEnum } from "../../Utils/Enum/enum.utils";
 
 export const createCouponSchema = {
   body: z
@@ -38,6 +40,53 @@ export const createCouponSchema = {
       {
         message: "couponAvailableAt cannot be a past date",
         path: ["couponAvailableAt"],
+      },
+    ),
+};
+
+export const getCouponSchema = {
+  params: z.strictObject({
+    couponId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
+
+export const updateCouponSchema = {
+  params: z.strictObject({
+    couponId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z
+    .strictObject({
+      couponStatus: z.enum(couponStatusEnum).optional(),
+      couponAvailableAt: z.coerce.date().optional(),
+      couponExpiredAt: z.coerce.date().optional(),
+      couponDiscount: z.number().min(1).max(100).optional(),
+      couponDiscountAmount: z.number().min(1).optional(),
+      maxUsage: z.number().min(1).optional(),
+    })
+    .refine(
+      (data) =>
+        !(
+          data.couponDiscount !== undefined &&
+          data.couponDiscountAmount !== undefined
+        ),
+      {
+        message:
+          "Provide only one discount method (either couponDiscount or couponDiscountAmount)",
+        path: ["couponDiscount"],
+      },
+    )
+    .refine(
+      (data) => {
+        if (!data.couponAvailableAt || !data.couponExpiredAt) return true;
+        return data.couponExpiredAt > data.couponAvailableAt;
+      },
+      {
+        message: "couponExpiredAt must be after couponAvailableAt",
+        path: ["couponExpiredAt"],
       },
     ),
 };
