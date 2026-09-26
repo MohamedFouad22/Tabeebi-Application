@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  checkCouponValidityDTO,
   deleteCouponDTO,
   getCouponDTO,
   IcreateCouponDTO,
@@ -13,7 +14,7 @@ import {
   ConflictException,
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
-import { RoleEnum } from "../../Utils/Enum/enum.utils";
+import { couponStatusEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
 
 class CouponServices {
   private _couponModel = new CouponRepository(couponModel);
@@ -203,6 +204,41 @@ class CouponServices {
     if (!coupon) throw new BadRequestException("Failed To Delete Coupon");
 
     return res.status(200).json({ message: "Coupon Deleted Successfully" });
+  };
+
+  checkCouponValidity = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { coupon } = req.params as checkCouponValidityDTO;
+
+    const checkCoupon = await this._couponModel.findOne({
+      filter: { code: coupon },
+      projection: "-createdAt -updatedAt -__v",
+    });
+    if (!checkCoupon) throw new NotFoundException("Coupon Not Found");
+
+    if (
+      checkCoupon.couponAvailableAt &&
+      checkCoupon.couponAvailableAt > new Date()
+    )
+      throw new BadRequestException("Coupon Is Not Available Now");
+
+    if (
+      checkCoupon.couponStatus === couponStatusEnum.EXPIRED ||
+      (checkCoupon.couponExpiredAt && checkCoupon.couponExpiredAt <= new Date())
+    )
+      throw new BadRequestException("Coupon Is Expired");
+
+    if (checkCoupon.maxUsage && checkCoupon.maxUsage <= checkCoupon.usageCount)
+      throw new BadRequestException(
+        "The Maximum Usage Limit For This Coupon Has Been Reached",
+      );
+
+    return res.status(200).json({
+      message: "Check Coupon Validity Successfully",
+      Data: { checkCoupon },
+    });
   };
 }
 export default new CouponServices();

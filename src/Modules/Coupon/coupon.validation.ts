@@ -98,3 +98,9 @@ export const deleteCouponSchema = {
     }),
   }),
 };
+
+export const checkCouponValiditySchema = {
+  params: z.strictObject({
+    coupon: z.string().trim().uppercase().min(2).max(50),
+  }),
+};

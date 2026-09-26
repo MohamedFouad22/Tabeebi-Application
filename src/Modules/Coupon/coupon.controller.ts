@@ -5,6 +5,7 @@ import { authentication } from "../../Middleware/authentication.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
+  checkCouponValiditySchema,
   createCouponSchema,
   deleteCouponSchema,
   getCouponSchema,
@@ -64,6 +65,13 @@ router.delete(
   ]),
   validation(deleteCouponSchema),
   couponServices.deleteCoupon,
+);
+
+router.get(
+  "/check-validity/:coupon",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
+  validation(checkCouponValiditySchema),
+  couponServices.checkCouponValidity,
 );
 
 export default router;
