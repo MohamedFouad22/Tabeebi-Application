@@ -16,16 +16,13 @@ export interface ICart {
     productTotal: number;
     subTotal: number;
     quantity: number;
-    selectedAttributes: ICartItemAttributes[];
+    selectedAttributes?: ICartItemAttributes[];
   }[];
 
   coupon?: Types.ObjectId;
 
   subTotal: number;
   discount?: number;
-  shippingFee: number;
-  taxFee: number;
-  TotalAfterAdditions: number;
 
   createdAt: Date;
   updatedAt?: Date;
@@ -84,9 +81,6 @@ export const cartSchema = new Schema<ICart>(
       min: [0, "Discount cannot be less than 0"],
       max: [100, "Discount cannot be most than 100"],
     },
-    shippingFee: { type: Number, default: 0, required: true },
-    taxFee: { type: Number, default: 0, required: true },
-    TotalAfterAdditions: { type: Number, default: 0, required: true },
   },
   {
     timestamps: true,
