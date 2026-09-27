@@ -9,3 +9,14 @@ export const createCartSchema = {
     quantity: z.number(),
   }),
 };
+
+export const getCartSchema = {
+  params: z.strictObject({
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+};
