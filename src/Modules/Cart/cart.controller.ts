@@ -5,6 +5,7 @@ import { authentication } from "../../Middleware/authentication.middleware";
 import { validation } from "../../Middleware/validation.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import {
+  clearCartSchema,
   createCartSchema,
   getCartSchema,
   removeItemSchema,
@@ -37,6 +38,13 @@ router.delete(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.USER]),
   validation(removeItemSchema),
   CartServices.removeItem,
+);
+
+router.delete(
+  "/clear-cart{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
+  validation(clearCartSchema),
+  CartServices.clearCart,
 );
 
 export default router;

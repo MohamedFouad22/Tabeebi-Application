@@ -8,6 +8,7 @@ import {
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import { productModel } from "../../DB/Models/product.model";
 import {
+  clearCartDTO,
   createCartDTO,
   getCartDTO,
   removeItemDTO,
@@ -229,6 +230,31 @@ class CartServices {
     return res
       .status(200)
       .json({ message: "Remove Product Successfully", Data: { cart } });
+  };
+
+  clearCart = async (req: Request, res: Response): Promise<Response> => {
+    const { userId } = req.params as clearCartDTO;
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const cart = await this._cartModel.findOneAndUpdate({
+      filter: { createdBy: user },
+      update: {
+        items: [],
+        subTotal: 0,
+        discount: 0,
+      },
+      options: { new: true },
+    });
+    if (!cart)
+      throw new NotFoundException("Not Found Cart Or Failed To Update Cart");
+
+    return res.status(200).json({ message: "Clear Cart Successfully" });
   };
 }
 export default new CartServices();

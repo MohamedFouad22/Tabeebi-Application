@@ -51,3 +51,14 @@ export const removeItemSchema = {
       .optional(),
   }),
 };
+
+export const clearCartSchema = {
+  params: z.strictObject({
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+};
