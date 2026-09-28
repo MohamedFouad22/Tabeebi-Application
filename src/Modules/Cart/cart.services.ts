@@ -7,7 +7,12 @@ import {
 } from "../../Utils/Security/Error/global.error.utils";
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import { productModel } from "../../DB/Models/product.model";
-import { createCartDTO, getCartDTO } from "./cart.dto";
+import {
+  createCartDTO,
+  getCartDTO,
+  updateItemQuantityDTO,
+  updateItemQuantityParamsDTO,
+} from "./cart.dto";
 import { Types } from "mongoose";
 import { RoleEnum } from "../../Utils/Enum/enum.utils";
 
@@ -125,6 +130,68 @@ class CartServices {
     return res.status(200).json({
       message: "Product Added To Cart Successfully",
       Data: { checkCart },
+    });
+  };
+
+  updateItemQuantity = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { itemId, userId } = req.params as updateItemQuantityParamsDTO;
+    const { quantity }: updateItemQuantityDTO = req.body;
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const checkCart = await this._cartModel.findOne({
+      filter: { createdBy: user },
+    });
+    if (!checkCart)
+      throw new NotFoundException("This user does not have a cart yet");
+
+    const product = await this._productModel.findOne({
+      filter: { _id: itemId },
+    });
+    if (!product) throw new NotFoundException("Product Not Found");
+
+    const price = product.priceAfterDiscount
+      ? product.priceAfterDiscount
+      : product.originalPrice;
+    const total = price * quantity;
+
+    const productId = checkCart.items.findIndex((item) => {
+      return item.productId.toString() === itemId.toString();
+    });
+
+    if (productId === -1) {
+      throw new NotFoundException("Item Not Found In Cart");
+    }
+
+    if (quantity > product.stock) {
+      throw new BadRequestException("Product Out Of Stock");
+    }
+
+    const item = checkCart.items[productId];
+    if (item) {
+      item.quantity = quantity;
+      item.productTotal = price;
+      item.subTotal = total;
+    }
+
+    checkCart.subTotal = checkCart.items.reduce(
+      (sum, item) => sum + (item.subTotal || 0),
+      0,
+    );
+
+    await checkCart.save();
+
+    return res.status(200).json({
+      message: "Item Quantity Updated Successfully",
+      Data: { cart: checkCart },
     });
   };
 }

@@ -4,7 +4,11 @@ import CartServices from "./cart.services";
 import { authentication } from "../../Middleware/authentication.middleware";
 import { validation } from "../../Middleware/validation.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
-import { createCartSchema, getCartSchema } from "./cart.validation";
+import {
+  createCartSchema,
+  getCartSchema,
+  updateItemQuantitySchema,
+} from "./cart.validation";
 
 router.get(
   "/get-cart{/:userId}",
@@ -18,6 +22,13 @@ router.post(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
   validation(createCartSchema),
   CartServices.createCart,
+);
+
+router.patch(
+  "/update-item-quantity{/:userId}/:itemId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
+  validation(updateItemQuantitySchema),
+  CartServices.updateItemQuantity,
 );
 
 export default router;
