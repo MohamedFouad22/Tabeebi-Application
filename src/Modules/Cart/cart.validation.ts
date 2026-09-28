@@ -37,3 +37,17 @@ export const updateItemQuantitySchema = {
     quantity: z.number(),
   }),
 };
+
+export const removeItemSchema = {
+  params: z.strictObject({
+    itemId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+};

@@ -7,6 +7,7 @@ import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import {
   createCartSchema,
   getCartSchema,
+  removeItemSchema,
   updateItemQuantitySchema,
 } from "./cart.validation";
 
@@ -29,6 +30,13 @@ router.patch(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
   validation(updateItemQuantitySchema),
   CartServices.updateItemQuantity,
+);
+
+router.delete(
+  "/delete-item{/:userId}/:itemId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.USER]),
+  validation(removeItemSchema),
+  CartServices.removeItem,
 );
 
 export default router;

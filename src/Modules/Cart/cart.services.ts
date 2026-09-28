@@ -10,6 +10,7 @@ import { productModel } from "../../DB/Models/product.model";
 import {
   createCartDTO,
   getCartDTO,
+  removeItemDTO,
   updateItemQuantityDTO,
   updateItemQuantityParamsDTO,
 } from "./cart.dto";
@@ -193,6 +194,41 @@ class CartServices {
       message: "Item Quantity Updated Successfully",
       Data: { cart: checkCart },
     });
+  };
+
+  removeItem = async (req: Request, res: Response): Promise<Response> => {
+    const { itemId, userId } = req.params as removeItemDTO;
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const cart = await this._cartModel.findOne({ filter: { createdBy: user } });
+    if (!cart) throw new NotFoundException("Cart Not Found");
+
+    const productId = cart.items.findIndex((item) => {
+      return item?.productId && item.productId.toString() === itemId.toString();
+    });
+
+    if (productId === -1) {
+      throw new NotFoundException("Product Not Found In Cart");
+    }
+
+    cart.items.splice(productId, 1);
+
+    cart.subTotal = cart.items.reduce(
+      (sum, item) => sum + (item.subTotal || 0),
+      0,
+    );
+
+    await cart.save();
+
+    return res
+      .status(200)
+      .json({ message: "Remove Product Successfully", Data: { cart } });
   };
 }
 export default new CartServices();

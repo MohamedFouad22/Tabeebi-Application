@@ -2,6 +2,7 @@ import * as z from "zod";
 import {
   createCartSchema,
   getCartSchema,
+  removeItemSchema,
   updateItemQuantitySchema,
 } from "./cart.validation";
 
@@ -13,3 +14,4 @@ export type updateItemQuantityDTO = z.infer<
 export type updateItemQuantityParamsDTO = z.infer<
   typeof updateItemQuantitySchema.params
 >;
+export type removeItemDTO = z.infer<typeof removeItemSchema.params>;
