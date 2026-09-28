@@ -8,6 +8,8 @@ import {
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import { productModel } from "../../DB/Models/product.model";
 import {
+  applyCouponDTO,
+  applyCouponParamsDTO,
   clearCartDTO,
   createCartDTO,
   getCartDTO,
@@ -16,11 +18,14 @@ import {
   updateItemQuantityParamsDTO,
 } from "./cart.dto";
 import { Types } from "mongoose";
-import { RoleEnum } from "../../Utils/Enum/enum.utils";
+import { couponStatusEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
+import { CouponRepository } from "../../DB/Repositories/coupon.repository";
+import { couponModel } from "../../DB/Models/coupon.model";
 
 class CartServices {
   private _cartModel = new CartRepository(cartModel);
   private _productModel = new ProductRepository(productModel);
+  private _couponModel = new CouponRepository(couponModel);
   constructor() {}
 
   getCart = async (req: Request, res: Response): Promise<Response> => {
@@ -255,6 +260,75 @@ class CartServices {
       throw new NotFoundException("Not Found Cart Or Failed To Update Cart");
 
     return res.status(200).json({ message: "Clear Cart Successfully" });
+  };
+
+  applyCoupon = async (req: Request, res: Response): Promise<Response> => {
+    const { coupon }: applyCouponDTO = req.body;
+    const { userId } = req.params as applyCouponParamsDTO;
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const checkCoupon = await this._couponModel.findOne({
+      filter: { code: coupon },
+    });
+    if (!checkCoupon) throw new NotFoundException("Coupon Not Found");
+
+    if (
+      checkCoupon.maxUsage &&
+      checkCoupon.maxUsage <= checkCoupon.usageCount
+    ) {
+      throw new BadRequestException("Coupon Reach Max Usage");
+    }
+
+    if (
+      checkCoupon.couponStatus === couponStatusEnum.EXPIRED ||
+      (checkCoupon.couponExpiredAt && checkCoupon.couponExpiredAt < new Date())
+    ) {
+      throw new BadRequestException("Coupon Is Expired");
+    }
+
+    if (
+      checkCoupon.couponAvailableAt &&
+      checkCoupon.couponAvailableAt > new Date()
+    ) {
+      throw new BadRequestException("Coupon Is Not Available Now");
+    }
+
+    const cart = await this._cartModel.findOne({
+      filter: { createdBy: user },
+    });
+    if (!cart) throw new NotFoundException("Cart Not Found");
+
+    if (!cart.items.length || cart.items.length < 1) {
+      throw new BadRequestException("Cart Is Empty");
+    }
+
+    if (cart.coupon) {
+      throw new BadRequestException(
+        "You Already Use One Coupon Cann't Use More Than Coupon",
+      );
+    }
+
+    const rawSubTotal = cart.items.reduce(
+      (sum, item) => sum + item.subTotal,
+      0,
+    );
+
+    const discountPercentage = checkCoupon.couponDiscount || 0;
+    const discountAmount = (rawSubTotal * discountPercentage) / 100;
+
+    cart.coupon = checkCoupon._id;
+    cart.subTotal = rawSubTotal - discountAmount;
+    cart.discount = discountPercentage;
+
+    await cart.save();
+
+    return res.status(200).json({ message: "Coupon Applied Successfully" });
   };
 }
 export default new CartServices();

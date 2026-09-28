@@ -1,5 +1,6 @@
 import * as z from "zod";
 import {
+  applyCouponSchema,
   clearCartSchema,
   createCartSchema,
   getCartSchema,
@@ -17,3 +18,5 @@ export type updateItemQuantityParamsDTO = z.infer<
 >;
 export type removeItemDTO = z.infer<typeof removeItemSchema.params>;
 export type clearCartDTO = z.infer<typeof clearCartSchema.params>;
+export type applyCouponDTO = z.infer<typeof applyCouponSchema.body>;
+export type applyCouponParamsDTO = z.infer<typeof applyCouponSchema.params>;

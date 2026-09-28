@@ -62,3 +62,17 @@ export const clearCartSchema = {
       .optional(),
   }),
 };
+
+export const applyCouponSchema = {
+  params: z.strictObject({
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+  body: z.strictObject({
+    coupon: z.string(),
+  }),
+};
