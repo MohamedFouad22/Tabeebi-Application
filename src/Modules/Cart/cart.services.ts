@@ -360,5 +360,58 @@ class CartServices {
 
     return res.status(200).json({ message: "Coupon Removed Successfully" });
   };
+
+  getActiveCarts = async (req: Request, res: Response): Promise<Response> => {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {
+      "items.0": { $exists: true },
+    };
+
+    if (req.query.abandonedHours) {
+      const hours = parseInt(req.query.abandonedHours as string);
+      const cutoffDate = new Date(Date.now() - hours * 60 * 60 * 1000);
+      filter.updatedAt = { $lt: cutoffDate };
+    }
+
+    const [carts, totalCarts] = await Promise.all([
+      this._cartModel.find({
+        filter,
+        options: {
+          limit,
+          page,
+          skip,
+          sort: { updatedAt: -1 },
+          populate: [{ path: "createdBy", select: "firstName lastName email" }],
+        },
+      }),
+
+      this._cartModel.countDocuments({ filter }),
+    ]);
+
+    const totalPages = Math.ceil(totalCarts / limit);
+
+    if (!carts.length || carts.length < 1) {
+      return res.status(200).json({
+        message: "Get Carts Successfully",
+        pagination: {
+          currentPage: page,
+          limit,
+          skip,
+          totalCarts,
+          totalPages,
+        },
+        carts: [],
+      });
+    }
+
+    return res.status(200).json({
+      message: "Get Carts Successfully",
+      pagination: { currentPage: page, limit, skip, totalCarts, totalPages },
+      carts,
+    });
+  };
 }
 export default new CartServices();

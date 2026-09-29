@@ -22,7 +22,7 @@ export interface ICart {
   coupon?: Types.ObjectId;
 
   subTotal: number;
-  totalAfterDiscount: number;
+  totalAfterDiscount?: number;
   discount?: number;
 
   createdAt: Date;
@@ -76,13 +76,14 @@ export const cartSchema = new Schema<ICart>(
     },
 
     subTotal: { type: Number, default: 0, required: true },
+
     totalAfterDiscount: {
       type: Number,
-      default: 0,
       required: function (this: HCartDocument) {
         return this.discount ? true : false;
       },
     },
+
     discount: {
       type: Number,
       default: 0,

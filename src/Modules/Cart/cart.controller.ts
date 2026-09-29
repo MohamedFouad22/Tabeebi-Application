@@ -63,4 +63,10 @@ router.delete(
   CartServices.removeCoupon,
 );
 
+router.get(
+  "/get-active-carts",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN]),
+  CartServices.getActiveCarts,
+);
+
 export default router;
