@@ -13,6 +13,7 @@ import {
   clearCartDTO,
   createCartDTO,
   getCartDTO,
+  removeCouponDTO,
   removeItemDTO,
   updateItemQuantityDTO,
   updateItemQuantityParamsDTO,
@@ -314,21 +315,50 @@ class CartServices {
       );
     }
 
-    const rawSubTotal = cart.items.reduce(
-      (sum, item) => sum + item.subTotal,
-      0,
-    );
-
     const discountPercentage = checkCoupon.couponDiscount || 0;
-    const discountAmount = (rawSubTotal * discountPercentage) / 100;
+    const discountAmount = (cart.subTotal * discountPercentage) / 100;
+    const finalPrice = cart.subTotal - discountAmount;
 
     cart.coupon = checkCoupon._id;
-    cart.subTotal = rawSubTotal - discountAmount;
+    cart.totalAfterDiscount = Number(finalPrice.toFixed(2));
     cart.discount = discountPercentage;
 
     await cart.save();
 
     return res.status(200).json({ message: "Coupon Applied Successfully" });
+  };
+
+  removeCoupon = async (req: Request, res: Response): Promise<Response> => {
+    const { userId } = req.params as removeCouponDTO;
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const cart = await this._cartModel.findOne({
+      filter: { createdBy: user, coupon: { $exists: true } },
+    });
+    if (!cart)
+      throw new NotFoundException(
+        "Cart Not Found Or Cart Already Not Apply Coupon",
+      );
+
+    const updateCart = await this._cartModel.updateOne({
+      filter: { createdBy: user },
+      update: {
+        $unset: { coupon: true, totalAfterDiscount: true },
+        discount: 0,
+        $inc: { __v: 1 },
+      },
+    });
+    if (!updateCart.modifiedCount) {
+      throw new BadRequestException("Failed To Update Cart");
+    }
+
+    return res.status(200).json({ message: "Coupon Removed Successfully" });
   };
 }
 export default new CartServices();

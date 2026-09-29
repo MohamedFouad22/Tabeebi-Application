@@ -76,3 +76,14 @@ export const applyCouponSchema = {
     coupon: z.string(),
   }),
 };
+
+export const removeCouponSchema = {
+  params: z.strictObject({
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+};

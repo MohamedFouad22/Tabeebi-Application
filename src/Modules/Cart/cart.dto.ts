@@ -4,6 +4,7 @@ import {
   clearCartSchema,
   createCartSchema,
   getCartSchema,
+  removeCouponSchema,
   removeItemSchema,
   updateItemQuantitySchema,
 } from "./cart.validation";
@@ -20,3 +21,4 @@ export type removeItemDTO = z.infer<typeof removeItemSchema.params>;
 export type clearCartDTO = z.infer<typeof clearCartSchema.params>;
 export type applyCouponDTO = z.infer<typeof applyCouponSchema.body>;
 export type applyCouponParamsDTO = z.infer<typeof applyCouponSchema.params>;
+export type removeCouponDTO = z.infer<typeof removeCouponSchema.params>;

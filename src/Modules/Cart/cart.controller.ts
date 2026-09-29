@@ -5,10 +5,11 @@ import { authentication } from "../../Middleware/authentication.middleware";
 import { validation } from "../../Middleware/validation.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import {
- applyCouponSchema,
+  applyCouponSchema,
   clearCartSchema,
   createCartSchema,
   getCartSchema,
+  removeCouponSchema,
   removeItemSchema,
   updateItemQuantitySchema,
 } from "./cart.validation";
@@ -53,6 +54,13 @@ router.post(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
   validation(applyCouponSchema),
   CartServices.applyCoupon,
+);
+
+router.delete(
+  "/remove-coupon{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
+  validation(removeCouponSchema),
+  CartServices.removeCoupon,
 );
 
 export default router;
