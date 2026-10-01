@@ -75,6 +75,9 @@ export enum statusEnum {
   CONFIRMED = "CONFIRMED",
   CANCELLED = "CANCELLED",
   COMPLETED = "COMPLETED",
+  PROCESSING = "PROCESSING",
+  SHIPPED = "SHIPPED",
+  DELIVERED = "DELIVERED",
 }
 
 export enum PaymentMethodEnum {
@@ -108,4 +111,5 @@ export enum SubjectEnum {
   INVITE_USER_EMAIL = "Invitation To Try Tabebbi Application",
   CONTACT_US_EMAIL = "Requesting Assistance From a Client",
   CONTACT_US_USER_EMAIL = "We Received Your Message",
+  CONFIRM_ORDER_EMAIL = "Confirm Your Order",
 }

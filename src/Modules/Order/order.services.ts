@@ -1,10 +1,184 @@
 import { Request, Response } from "express";
+import { createOrderDTO, createOrderParamsDTO } from "./order.dto";
+import {
+  PaymentMethodEnum,
+  PaymentStatusEnum,
+  RoleEnum,
+  statusEnum,
+} from "../../Utils/Enum/enum.utils";
+import { CartRepository } from "../../DB/Repositories/cart.repository";
+import { cartModel } from "../../DB/Models/cart.model";
+import { orderModel } from "../../DB/Models/order.model";
+import { OrderRepository } from "../../DB/Repositories/order.repository";
+import { couponModel } from "../../DB/Models/coupon.model";
+import { CouponRepository } from "../../DB/Repositories/coupon.repository";
+import {
+  BadRequestException,
+  NotFoundException,
+} from "../../Utils/Security/Error/global.error.utils";
+import { eventEmitter } from "../../Utils/Events/event.utils";
+import { userModel } from "../../DB/Models/user.model";
+import { UserRepository } from "../../DB/Repositories/user.repository";
+import { productModel } from "../../DB/Models/product.model";
+import { ProductRepository } from "../../DB/Repositories/product.repository";
 
 class OrderServices {
+  private _cartModel = new CartRepository(cartModel);
+  private _orderModel = new OrderRepository(orderModel);
+  private _couponModel = new CouponRepository(couponModel);
+  private _userModel = new UserRepository(userModel);
+  private _productModel = new ProductRepository(productModel);
   constructor() {}
 
   createOrder = async (req: Request, res: Response): Promise<Response> => {
-    return res.status(201).json({ message: "Order Created Successfully" });
+    const { userId }: createOrderParamsDTO = req.params;
+    const { address, phone, paymentMethod }: createOrderDTO = req.body;
+
+    let user;
+    let userData;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+      userData = await this._userModel.findOne({
+        filter: { _id: user },
+      });
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const cart = await this._cartModel.findOne({
+      filter: { createdBy: user },
+      options: {
+        populate: [
+          {
+            path: "items.productId",
+            select: "productName originalPrice stock priceAfterDiscount",
+          },
+        ],
+      },
+    });
+    if (!cart) throw new NotFoundException("Cart Not Found");
+
+    let coupon;
+    if (cart.coupon) {
+      coupon = await this._couponModel.findOne({
+        filter: { _id: cart.coupon },
+      });
+      if (!coupon) throw new NotFoundException("Coupon Not Found");
+    }
+
+    const total = cart.totalAfterDiscount
+      ? cart.totalAfterDiscount
+      : cart.subTotal;
+
+    const taxFee = (total * 3) / 100;
+
+    let shippingFee;
+    if (total >= 10_000) {
+      shippingFee = 0;
+    } else {
+      shippingFee = 50;
+    }
+
+    const totalAfterAddition = total + taxFee + shippingFee;
+    const totalOrder = total;
+
+    for (const item of cart.items) {
+      const productData = item.productId as any;
+      if (productData.stock < item.quantity) {
+        throw new BadRequestException(
+          `Insufficient stock for product: ${productData.productName}`,
+        );
+      }
+    }
+
+    if (
+      !paymentMethod ||
+      (paymentMethod && paymentMethod === PaymentMethodEnum.CASH)
+    ) {
+      for (const item of cart.items) {
+        const productId = (item.productId as any)._id || item.productId;
+
+        await this._productModel.updateOne({
+          filter: {
+            _id: productId,
+            stock: { $gte: item.quantity },
+          },
+          update: {
+            $inc: {
+              stock: -item.quantity,
+              sold: item.quantity,
+            },
+          },
+        });
+      }
+    }
+
+    const [order] = await this._orderModel.create({
+      data: [
+        {
+          createdBy: user,
+          cartId: cart._id,
+          couponId: coupon?._id,
+          items: cart.items,
+          subTotal: Number(totalOrder.toFixed(2)),
+          discount: cart.discount,
+          taxFee,
+          shippingFee,
+          totalAfterDiscount: Number(totalAfterAddition.toFixed(2)),
+          status: statusEnum.PENDING,
+          paymentStatus: PaymentStatusEnum.UNPAID,
+          paymentMethod,
+          address,
+          phone,
+        },
+      ],
+    });
+    if (!order) {
+      throw new BadRequestException("Failed To Create Order");
+    } else {
+      if (order.paymentMethod === PaymentMethodEnum.CASH) {
+        if (order.couponId) {
+          const updateCoupon = await this._couponModel.updateOne({
+            filter: { _id: coupon?._id },
+            update: {
+              $inc: { usageCount: 1, __v: 1 },
+            },
+          });
+          if (!updateCoupon)
+            throw new BadRequestException("Failed To Update Coupon");
+        }
+
+        const deleteCart = await this._cartModel.deleteOne({
+          filter: { createdBy: user },
+        });
+        if (!deleteCart)
+          throw new BadRequestException("Failed To Delete Order From Cart");
+      }
+    }
+
+    eventEmitter.emit("orderConfirmation", {
+      to:
+        req.decoded.role === RoleEnum.USER
+          ? req.decoded.email
+          : userData?.email,
+      userName:
+        req.decoded.role === RoleEnum.USER
+          ? req.decoded.userName
+          : userData?.userName,
+      total: order.totalAfterDiscount,
+      paymentMethod: order.paymentMethod,
+      items: cart.items.map((item) => ({
+        name: (item.productId as any).productName,
+        quantity: item.quantity,
+        price: item.subTotal,
+      })),
+      address,
+      phone,
+    });
+
+    return res
+      .status(201)
+      .json({ message: "Order Created Successfully", Data: { order } });
   };
 }
 export default new OrderServices();

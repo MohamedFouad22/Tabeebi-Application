@@ -15,8 +15,15 @@ import { inviteUserTemplate } from "../Email/Templates/inviteUser.email";
 import { contactUsTemplate } from "../Email/Templates/contactUs.email";
 import { contactUsConfirmationTemplate } from "../Email/Templates/contactUsUser.email";
 import { disable2faTemplate } from "../Email/Templates/disableTwoAuthFactor.email.utils";
+import { orderConfirmationTemplate } from "../Email/Templates/orderConfirmationTemplate.email";
 
 export const eventEmitter = new EventEmitter();
+
+export interface IEmailItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
 
 export interface IEmail extends Mail.Options {
   code: number;
@@ -28,6 +35,10 @@ export interface IEmail extends Mail.Options {
   email?: string;
   phone?: string;
   comment?: string;
+  total?: number;
+  paymentMethod?: string;
+  address?: string;
+  items?: IEmailItem[];
 }
 
 eventEmitter.on("confirmEmail", async (data: IEmail) => {
@@ -218,5 +229,23 @@ eventEmitter.on("disableTwoAuthFactor", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Disable 2FA Email ❌");
+  }
+});
+
+eventEmitter.on("orderConfirmation", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.CONFIRM_ORDER_EMAIL;
+    data.html = orderConfirmationTemplate(
+      data.userName as string,
+      data.total as number,
+      data.paymentMethod as string,
+      data.items || [],
+      data.address as string,
+      data.phone as string,
+      SubjectEnum.CONFIRM_ORDER_EMAIL,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Confirm Order Email ❌");
   }
 });
