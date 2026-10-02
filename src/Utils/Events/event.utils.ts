@@ -16,6 +16,7 @@ import { contactUsTemplate } from "../Email/Templates/contactUs.email";
 import { contactUsConfirmationTemplate } from "../Email/Templates/contactUsUser.email";
 import { disable2faTemplate } from "../Email/Templates/disableTwoAuthFactor.email.utils";
 import { orderConfirmationTemplate } from "../Email/Templates/orderConfirmationTemplate.email";
+import { orderStatusTemplate } from "../Email/Templates/orderStatus.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -39,6 +40,7 @@ export interface IEmail extends Mail.Options {
   paymentMethod?: string;
   address?: string;
   items?: IEmailItem[];
+  status?: string;
 }
 
 eventEmitter.on("confirmEmail", async (data: IEmail) => {
@@ -247,5 +249,23 @@ eventEmitter.on("orderConfirmation", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Confirm Order Email ❌");
+  }
+});
+
+eventEmitter.on("orderStatus", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.ORDER_STATUS_EMAIL;
+    data.html = orderStatusTemplate(
+      data.userName as string,
+      data.status as string,
+      SubjectEnum.ORDER_STATUS_EMAIL,
+      data.address as string,
+      data.phone as string,
+      data.paymentMethod as string,
+      data.total as number,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Order Status Email ❌");
   }
 });

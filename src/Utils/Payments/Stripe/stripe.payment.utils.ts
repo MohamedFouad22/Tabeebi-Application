@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { BadRequestException } from "../../Security/Error/global.error.utils";
 
 class StripeServices {
   private stripe: Stripe;
@@ -37,6 +38,43 @@ class StripeServices {
     secret?: string;
   }): Stripe.Event {
     return this.stripe.webhooks.constructEvent(payload, signature, secret);
+  }
+
+  async createPaymentMethod(data: Stripe.PaymentMethodCreateParams) {
+    const method = await this.stripe.paymentMethods.create(data);
+    return method;
+  }
+
+  async createPaymentIntent(data: Stripe.PaymentIntentCreateParams) {
+    const intent = await this.stripe.paymentIntents.create(data);
+    return intent;
+  }
+
+  async paymentRetrieve(id: string) {
+    const intent = await this.stripe.paymentIntents.retrieve(id);
+    return intent;
+  }
+
+  async confirmPaymentIntent(id: string) {
+    const intent = await this.paymentRetrieve(id);
+    if (!intent) throw new BadRequestException("Invalid Payment Intent ID");
+
+    const confirmIntent = await this.stripe.paymentIntents.confirm(id);
+    return confirmIntent;
+  }
+
+  async verifyPaymentIntent(id: string) {
+    const intent = await this.paymentRetrieve(id);
+    if (!intent) {
+      throw new BadRequestException("Invalid Payment Intent ID");
+    }
+    console.log(intent);
+
+    if (intent.status !== "succeeded") {
+      throw new BadRequestException("Payment has not been completed");
+    }
+
+    return intent;
   }
 }
 export default new StripeServices();

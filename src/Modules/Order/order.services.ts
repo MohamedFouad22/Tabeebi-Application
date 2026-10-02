@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { createOrderDTO, createOrderParamsDTO } from "./order.dto";
+import {
+  createCheckoutDTO,
+  createOrderDTO,
+  createOrderParamsDTO,
+} from "./order.dto";
 import {
   PaymentMethodEnum,
   PaymentStatusEnum,
@@ -21,6 +25,7 @@ import { userModel } from "../../DB/Models/user.model";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { productModel } from "../../DB/Models/product.model";
 import { ProductRepository } from "../../DB/Repositories/product.repository";
+import StripeServices from "../../Utils/Payments/Stripe/stripe.payment.utils";
 
 class OrderServices {
   private _cartModel = new CartRepository(cartModel);
@@ -179,6 +184,67 @@ class OrderServices {
     return res
       .status(201)
       .json({ message: "Order Created Successfully", Data: { order } });
+  };
+
+  checkoutOrder = async (req: Request, res: Response): Promise<Response> => {
+    const { userId, orderId } = req.params as createCheckoutDTO;
+
+    let user;
+    let email;
+    let userData;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+      userData = await this._userModel.findOne({ filter: { _id: user } });
+      email = userId ? userData?.email : req.decoded.email;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+      email = req.decoded.email;
+    }
+
+    const order = await this._orderModel.findOne({
+      filter: {
+        _id: orderId,
+        createdBy: user,
+        paymentMethod: PaymentMethodEnum.CARD,
+        paymentStatus: PaymentStatusEnum.UNPAID,
+        status: statusEnum.PENDING,
+      },
+      options: {
+        populate: [
+          { path: "createdBy", select: "firstName lastName email" },
+          { path: "items.productId", select: "productName" },
+        ],
+      },
+    });
+    if (!order)
+      throw new NotFoundException(
+        "Order Not Found Or Can't Complete This Order",
+      );
+
+    const session = await StripeServices.createSession({
+      customer_email: email,
+      line_items: [
+        {
+          price_data: {
+            currency: "egp",
+            product_data: {
+              name: order.items
+                .map((item) => (item.productId as any).productName)
+                .join(", "),
+            },
+            unit_amount: Math.round(order.totalAfterDiscount * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: { order: orderId.toString() },
+      mode: "payment",
+    });
+
+    return res.status(200).json({
+      message: "Checkout Done Successfully",
+      session: { url: session.url },
+    });
   };
 }
 export default new OrderServices();

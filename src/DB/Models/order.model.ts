@@ -35,6 +35,8 @@ export interface IOrder {
   shippingFee: number;
   taxFee: number;
 
+  intentId?: string;
+
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -154,6 +156,8 @@ export const orderSchema = new Schema<IOrder>(
       default: 0,
       required: true,
     },
+
+    intentId: String,
   },
   {
     timestamps: true,

@@ -21,3 +21,17 @@ export const createOrderSchema = {
       .optional(),
   }),
 };
+
+export const createCheckoutSchema = {
+  params: z.strictObject({
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+    orderId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
