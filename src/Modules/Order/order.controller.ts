@@ -5,8 +5,10 @@ import { authentication } from "../../Middleware/authentication.middleware";
 import { RoleEnum, TokenTypeEnum } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import {
+  cancelOrderSchema,
   createCheckoutSchema,
   createOrderSchema,
+  getOrdersAdminSchema,
   getOrderSchema,
   getOrdersSchema,
 } from "./order.validation";
@@ -37,6 +39,20 @@ router.get(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
   validation(getOrderSchema),
   OrderServices.getOrder,
+);
+
+router.patch(
+  "/cancel-order{/:userId}/:orderId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
+  validation(cancelOrderSchema),
+  OrderServices.cancelOrder,
+);
+
+router.get(
+  "/get-orders",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN]),
+  validation(getOrdersAdminSchema),
+  OrderServices.getAllOrders,
 );
 
 export default router;

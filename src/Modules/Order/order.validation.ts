@@ -46,7 +46,7 @@ export const getOrdersSchema = {
       .optional(),
   }),
   query: z.strictObject({
-    status: z.nativeEnum(statusEnum).optional(),
+    status: z.enum(statusEnum).optional(),
     page: z.string().optional(),
     limit: z.string().optional(),
   }),
@@ -57,5 +57,27 @@ export const getOrderSchema = {
     orderId: z.string().refine((value) => {
       return Types.ObjectId.isValid(value);
     }),
+  }),
+};
+
+export const cancelOrderSchema = {
+  params: z.strictObject({
+    orderId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+};
+
+export const getOrdersAdminSchema = {
+  query: z.strictObject({
+    status: z.enum(statusEnum).optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
   }),
 };

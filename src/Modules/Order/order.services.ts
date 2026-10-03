@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import {
+  cancelOrderDTO,
   createCheckoutDTO,
   createOrderDTO,
   createOrderParamsDTO,
   getOrderDTO,
+  getOrdersAdminDTO,
   getOrdersDTO,
   getOrdersQueryDTO,
 } from "./order.dto";
@@ -326,6 +328,111 @@ class OrderServices {
     if (!order) throw new NotFoundException("Order Not Found");
 
     return res.status(200).json({ message: "Get Order Successfully", order });
+  };
+
+  cancelOrder = async (req: Request, res: Response): Promise<Response> => {
+    const { orderId, userId } = req.params as cancelOrderDTO;
+
+    if (req.decoded.role === RoleEnum.USER && req.params.userId) {
+      throw new ForbiddenException("You Not Allowed To Sent User Id");
+    }
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const filter: Record<string, any> = { _id: orderId, createdBy: user };
+
+    const order = await this._orderModel.findOne({
+      filter,
+    });
+    if (!order) throw new NotFoundException("Order Not Found");
+
+    if (order.paymentMethod === PaymentMethodEnum.CASH) {
+      for (const item of order.items) {
+        const productId = (item.productId as any)._id || item.productId;
+
+        const updateProduct = await this._productModel.updateOne({
+          filter: { _id: productId },
+          update: {
+            $inc: {
+              stock: item.quantity,
+              sold: -item.quantity,
+            },
+          },
+        });
+
+        if (!updateProduct)
+          throw new BadRequestException("Failed To Update Product");
+      }
+    }
+
+    if (
+      order.paymentStatus === PaymentStatusEnum.UNPAID &&
+      order.paymentMethod === PaymentMethodEnum.CASH &&
+      order.status ===
+        (statusEnum.PENDING || statusEnum.CONFIRMED || statusEnum.PROCESSING)
+    ) {
+      const updateOrder = await this._orderModel.updateOne({
+        filter,
+        update: {
+          status: statusEnum.CANCELLED,
+          $inc: { __v: 1 },
+        },
+      });
+      if (!updateOrder) throw new BadRequestException("Failed To Update Order");
+    } else {
+      throw new BadRequestException("Order Can't Canceled ");
+    }
+
+    return res.status(200).json({ message: "Order Canceled Successfully" });
+  };
+
+  getAllOrders = async (req: Request, res: Response): Promise<Response> => {
+    const { status } = req.query as getOrdersAdminDTO;
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const [orders, totalOrders] = await Promise.all([
+      this._orderModel.find({
+        filter,
+        projection: "-__v -updatedAt",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+          populate: [{ path: "createdBy", select: "firstName lastName email" }],
+        },
+      }),
+
+      this._orderModel.countDocuments({ filter }),
+    ]);
+
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    return res.status(200).json({
+      message: "Get Orders Successfully",
+      pagination: {
+        currentPage: page,
+        limit,
+        skip,
+        totalPages,
+        totalOrders,
+      },
+      orders,
+    });
   };
 }
 export default new OrderServices();
