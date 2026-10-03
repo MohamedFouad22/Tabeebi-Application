@@ -3,6 +3,7 @@ import {
   createCheckoutDTO,
   createOrderDTO,
   createOrderParamsDTO,
+  getOrderDTO,
   getOrdersDTO,
   getOrdersQueryDTO,
 } from "./order.dto";
@@ -304,6 +305,27 @@ class OrderServices {
       },
       orders,
     });
+  };
+
+  getOrder = async (req: Request, res: Response): Promise<Response> => {
+    const { orderId } = req.params as getOrderDTO;
+
+    const filter: Record<string, any> = { _id: orderId };
+
+    if (req.decoded.role === RoleEnum.USER) {
+      filter.createdBy = req.decoded._id;
+    }
+
+    const order = await this._orderModel.findOne({
+      filter,
+      projection: "-__v -updatedAt",
+      options: {
+        populate: [{ path: "createdBy", select: "firstName lastName email" }],
+      },
+    });
+    if (!order) throw new NotFoundException("Order Not Found");
+
+    return res.status(200).json({ message: "Get Order Successfully", order });
   };
 }
 export default new OrderServices();

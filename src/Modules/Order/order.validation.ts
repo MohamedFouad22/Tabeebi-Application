@@ -51,3 +51,11 @@ export const getOrdersSchema = {
     limit: z.string().optional(),
   }),
 };
+
+export const getOrderSchema = {
+  params: z.strictObject({
+    orderId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};

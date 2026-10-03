@@ -7,6 +7,7 @@ import { validation } from "../../Middleware/validation.middleware";
 import {
   createCheckoutSchema,
   createOrderSchema,
+  getOrderSchema,
   getOrdersSchema,
 } from "./order.validation";
 
@@ -29,6 +30,13 @@ router.get(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
   validation(getOrdersSchema),
   OrderServices.getOrders,
+);
+
+router.get(
+  "/get-order/:orderId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),
+  validation(getOrderSchema),
+  OrderServices.getOrder,
 );
 
 export default router;
