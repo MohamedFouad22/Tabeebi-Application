@@ -11,6 +11,7 @@ import {
   getOrdersAdminSchema,
   getOrderSchema,
   getOrdersSchema,
+  updateStatusSchema,
 } from "./order.validation";
 
 router.post(
@@ -53,6 +54,13 @@ router.get(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN]),
   validation(getOrdersAdminSchema),
   OrderServices.getAllOrders,
+);
+
+router.patch(
+  "/update-status/:orderId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN]),
+  validation(updateStatusSchema),
+  OrderServices.updateStatus,
 );
 
 export default router;

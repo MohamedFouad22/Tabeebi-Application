@@ -113,4 +113,5 @@ export enum SubjectEnum {
   CONTACT_US_USER_EMAIL = "We Received Your Message",
   CONFIRM_ORDER_EMAIL = "Confirm Your Order",
   ORDER_STATUS_EMAIL = "Your Order Status",
+  UPDATE_ORDER_STATUS = "Your Order Status",
 }

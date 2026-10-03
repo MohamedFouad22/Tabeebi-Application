@@ -6,6 +6,7 @@ import {
   getOrdersAdminSchema,
   getOrderSchema,
   getOrdersSchema,
+  updateStatusSchema,
 } from "./order.validation";
 
 export type createOrderDTO = z.infer<typeof createOrderSchema.body>;
@@ -16,3 +17,5 @@ export type getOrdersQueryDTO = z.infer<typeof getOrdersSchema.query>;
 export type getOrderDTO = z.infer<typeof getOrderSchema.params>;
 export type cancelOrderDTO = z.infer<typeof cancelOrderSchema.params>;
 export type getOrdersAdminDTO = z.infer<typeof getOrdersAdminSchema.query>;
+export type updateStatusDTO = z.infer<typeof updateStatusSchema.body>;
+export type updateStatusParamsDTO = z.infer<typeof updateStatusSchema.params>;

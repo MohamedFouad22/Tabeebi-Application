@@ -8,6 +8,8 @@ import {
   getOrdersAdminDTO,
   getOrdersDTO,
   getOrdersQueryDTO,
+  updateStatusDTO,
+  updateStatusParamsDTO,
 } from "./order.dto";
 import {
   PaymentMethodEnum,
@@ -433,6 +435,68 @@ class OrderServices {
       },
       orders,
     });
+  };
+
+  updateStatus = async (req: Request, res: Response): Promise<Response> => {
+    const { orderId } = req.params as updateStatusParamsDTO;
+    const { status }: updateStatusDTO = req.body;
+
+    const filter: Record<string, any> = { _id: orderId };
+    const update: Record<string, any> = { status, $inc: { __v: 1 } };
+
+    const order = await this._orderModel.findOne({
+      filter,
+      options: {
+        populate: [{ path: "createdBy", select: "firstName lastName email" }],
+      },
+    });
+    if (!order) throw new NotFoundException("Order Not Found");
+
+    if (
+      order.status === statusEnum.CANCELLED ||
+      order.status === statusEnum.DELIVERED
+    ) {
+      throw new BadRequestException(
+        "This Order Has Been Canceled Or Already Delivered Can't Be Update Status",
+      );
+    }
+
+    if (order.status === status) {
+      throw new BadRequestException("The Order Is Already At This Stage");
+    }
+
+    if (
+      status === statusEnum.DELIVERED &&
+      order.paymentMethod === PaymentMethodEnum.CASH &&
+      order.paymentStatus === PaymentStatusEnum.UNPAID
+    ) {
+      update.paymentStatus = PaymentStatusEnum.PAID;
+    }
+
+    const updateOrder = await this._orderModel.updateOne({
+      filter,
+      update,
+    });
+    if (!updateOrder)
+      throw new BadRequestException("Failed To Update Order Status");
+
+    const user = order.createdBy as unknown as {
+      firstName: string;
+      lastName: string;
+      userName: string;
+      email: string;
+    };
+
+    eventEmitter.emit("updateOrderStatus", {
+      to: user.email,
+      userName: user.userName,
+      status: status,
+      total: order.totalAfterDiscount,
+      address: order.address,
+      phone: order.phone,
+    });
+
+    return res.status(200).json({ message: "Status Updated Successfully" });
   };
 }
 export default new OrderServices();

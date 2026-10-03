@@ -17,6 +17,7 @@ import { contactUsConfirmationTemplate } from "../Email/Templates/contactUsUser.
 import { disable2faTemplate } from "../Email/Templates/disableTwoAuthFactor.email.utils";
 import { orderConfirmationTemplate } from "../Email/Templates/orderConfirmationTemplate.email";
 import { orderStatusTemplate } from "../Email/Templates/orderStatus.email";
+import { orderStatusUpdateTemplate } from "../Email/Templates/updateOrderStatus.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -267,5 +268,22 @@ eventEmitter.on("orderStatus", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Order Status Email ❌");
+  }
+});
+
+eventEmitter.on("updateOrderStatus", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.UPDATE_ORDER_STATUS;
+    data.html = orderStatusUpdateTemplate(
+      data.userName as string,
+      data.status as string,
+      data.total as number,
+      data.address as string,
+      data.phone as string,
+      SubjectEnum.UPDATE_ORDER_STATUS,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Update Order Status Email ❌");
   }
 });

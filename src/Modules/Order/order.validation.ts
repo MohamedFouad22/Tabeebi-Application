@@ -81,3 +81,14 @@ export const getOrdersAdminSchema = {
     limit: z.string().optional(),
   }),
 };
+
+export const updateStatusSchema = {
+  body: z.strictObject({
+    status: z.enum(statusEnum),
+  }),
+  params: z.strictObject({
+    orderId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+};
