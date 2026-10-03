@@ -1,7 +1,7 @@
 import * as z from "zod";
 import { generalFields } from "../../Middleware/generalFields.utils";
 import { Types } from "mongoose";
-import { PaymentMethodEnum } from "../../Utils/Enum/enum.utils";
+import { PaymentMethodEnum, statusEnum } from "../../Utils/Enum/enum.utils";
 
 export const createOrderSchema = {
   params: z.strictObject({
@@ -33,5 +33,21 @@ export const createCheckoutSchema = {
     orderId: z.string().refine((value) => {
       return Types.ObjectId.isValid(value);
     }),
+  }),
+};
+
+export const getOrdersSchema = {
+  params: z.strictObject({
+    userId: z
+      .string()
+      .refine((value) => {
+        return Types.ObjectId.isValid(value);
+      })
+      .optional(),
+  }),
+  query: z.strictObject({
+    status: z.nativeEnum(statusEnum).optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
   }),
 };

@@ -3,6 +3,8 @@ import {
   createCheckoutDTO,
   createOrderDTO,
   createOrderParamsDTO,
+  getOrdersDTO,
+  getOrdersQueryDTO,
 } from "./order.dto";
 import {
   PaymentMethodEnum,
@@ -18,6 +20,7 @@ import { couponModel } from "../../DB/Models/coupon.model";
 import { CouponRepository } from "../../DB/Repositories/coupon.repository";
 import {
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
@@ -244,6 +247,62 @@ class OrderServices {
     return res.status(200).json({
       message: "Checkout Done Successfully",
       session: { url: session.url },
+    });
+  };
+
+  getOrders = async (req: Request, res: Response): Promise<Response> => {
+    const { userId } = req.params as getOrdersDTO;
+    const { status } = req.query as getOrdersQueryDTO;
+
+    if (req.decoded.role === RoleEnum.USER && req.params.userId) {
+      throw new ForbiddenException("You Not Allowed To Sent User Id");
+    }
+
+    let user;
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      user = userId ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.USER) {
+      user = req.decoded._id;
+    }
+
+    const filter: Record<string, any> = { createdBy: user };
+
+    if (req.query.status) {
+      filter.status = status;
+    }
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const skip = (page - 1) * limit;
+
+    const [orders, totalOrders] = await Promise.all([
+      this._orderModel.find({
+        filter,
+        projection: "-__v -updatedAt",
+        options: {
+          page,
+          limit,
+          skip,
+          sort: { createdAt: -1 },
+          populate: [{ path: "createdBy", select: "firstName lastName email" }],
+        },
+      }),
+
+      this._orderModel.countDocuments({ filter }),
+    ]);
+
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    return res.status(200).json({
+      message: "Get Orders Successfully",
+      Pagination: {
+        currentPage: page,
+        limit,
+        skip,
+        totalOrders,
+        totalPages,
+      },
+      orders,
     });
   };
 }
