@@ -28,6 +28,8 @@ router.post(
   OrderServices.checkoutOrder,
 );
 
+router.post("/order-webhook", OrderServices.webhookStripe);
+
 router.get(
   "/get-all-orders{/:userId}",
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.USER, RoleEnum.ADMIN]),

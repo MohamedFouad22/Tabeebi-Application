@@ -27,6 +27,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  UnauthorizedException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { userModel } from "../../DB/Models/user.model";
@@ -34,6 +35,7 @@ import { UserRepository } from "../../DB/Repositories/user.repository";
 import { productModel } from "../../DB/Models/product.model";
 import { ProductRepository } from "../../DB/Repositories/product.repository";
 import StripeServices from "../../Utils/Payments/Stripe/stripe.payment.utils";
+import Stripe from "stripe";
 
 class OrderServices {
   private _cartModel = new CartRepository(cartModel);
@@ -253,6 +255,54 @@ class OrderServices {
       message: "Checkout Done Successfully",
       session: { url: session.url },
     });
+  };
+
+  webhookStripe = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const signature = req.headers["stripe-signature"] as string;
+
+      if (!signature)
+        throw new UnauthorizedException("Missing Stripe Signature");
+
+      const event = StripeServices.constructEvent({
+        payload: req.body,
+        signature,
+        secret: process.env.STRIPE_WEBHOOK_SECRET as string,
+      });
+
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const order_id = session.metadata?.order;
+
+        if (order_id) {
+          try {
+            const updateResult = await this._orderModel.updateOne({
+              filter: { _id: order_id },
+              update: {
+                status: statusEnum.CONFIRMED,
+                paymentStatus: PaymentStatusEnum.PAID,
+                $inc: { __v: 1 },
+              },
+            });
+            if (updateResult.matchedCount === 0) {
+              console.warn(`⚠️ No Order found in DB for ID: ${order_id}`);
+            } else {
+              console.log(`✅ Order ${order_id} confirmed and paid.`);
+            }
+          } catch (dbError: any) {
+            console.error("❌ DB Update Error in Webhook:", dbError.message);
+          }
+        } else {
+          console.warn(
+            "⚠️ Checkout Session completed without 'order_id' in metadata.",
+          );
+        }
+      }
+      return res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error("❌ Webhook Error:", error.message);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
   };
 
   getOrders = async (req: Request, res: Response): Promise<Response> => {

@@ -33,7 +33,10 @@ export const bootstrap = async () => {
   const port: number = Number(process.env.PORT) || 5000;
 
   app.use(
-    process.env.STRIPE_WEBHOOK_URL as string,
+    [
+      process.env.STRIPE_WEBHOOK_URL as string,
+      process.env.STRIPE_WEBHOOK_URL_ORDER as string,
+    ],
     express.raw({ type: "application/json" }),
   );
   app.use(express.json());
