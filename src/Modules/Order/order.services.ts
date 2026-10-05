@@ -394,14 +394,13 @@ class OrderServices {
       throw new ForbiddenException("You Not Allowed To Sent User Id");
     }
 
-    let user;
-    if (req.decoded.role === RoleEnum.ADMIN) {
-      user = userId ? userId : req.decoded._id;
-    } else if (req.decoded.role === RoleEnum.USER) {
-      user = req.decoded._id;
-    }
+    const filter: Record<string, any> = { _id: orderId };
 
-    const filter: Record<string, any> = { _id: orderId, createdBy: user };
+    if (req.decoded.role === RoleEnum.USER) {
+      filter.createdBy = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.ADMIN) {
+      filter.createdBy = userId ? userId : req.decoded._id;
+    }
 
     const order = await this._orderModel.findOne({
       filter,
@@ -448,6 +447,7 @@ class OrderServices {
           filter,
           update: {
             status: statusEnum.CANCELLED,
+            paymentStatus: PaymentStatusEnum.REFUNDED,
             $inc: { __v: 1 },
           },
         });
@@ -463,28 +463,29 @@ class OrderServices {
         (order.paymentMethod === PaymentMethodEnum.CARD &&
           order.paymentStatus === PaymentStatusEnum.PAID)
       ) {
-        for (const item of order.items) {
+        const bulkOps = order.items.map((item) => {
           const productId = (item.productId as any)._id || item.productId;
-
-          const updateProduct = await this._productModel.updateOne({
-            filter: { _id: productId },
-            update: {
-              $inc: {
-                stock: item.quantity,
-                sold: -item.quantity,
+          return {
+            updateOne: {
+              filter: { _id: productId, sold: { $gte: item.quantity } },
+              update: {
+                $inc: {
+                  stock: item.quantity,
+                  sold: -item.quantity,
+                },
               },
             },
-          });
+          };
+        });
 
-          if (!updateProduct)
-            throw new BadRequestException("Failed To Update Product");
-        }
+        await this._productModel.bulkWrite(bulkOps);
       }
+
+      return res.status(200).json({ message: "Order Canceled Successfully" });
     } catch (error) {
       console.log(error);
+      throw error;
     }
-
-    return res.status(200).json({ message: "Order Canceled Successfully" });
   };
 
   getAllOrders = async (req: Request, res: Response): Promise<Response> => {

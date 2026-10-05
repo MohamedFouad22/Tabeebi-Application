@@ -585,6 +585,7 @@ class appointmentServices {
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
         const book_id = session.metadata?.book_id;
+        const paymentIntentId = session.payment_intent as string;
 
         if (book_id) {
           try {
@@ -595,6 +596,7 @@ class appointmentServices {
                 $set: {
                   status: statusEnum.CONFIRMED,
                   paymentStatus: PaymentStatusEnum.PAID,
+                  paymentIntentId,
                 },
               },
             });

@@ -32,6 +32,7 @@ export interface IBooking {
   patientName: string;
 
   bookingDateExpiredAt?: Date;
+  paymentIntentId: string;
 
   createdAt: Date;
   updatedAt?: Date;
@@ -124,6 +125,7 @@ export const bookingSchema = new Schema<IBooking>(
     },
 
     bookingDateExpiredAt: Date,
+    paymentIntentId: String,
   },
   {
     timestamps: true,
