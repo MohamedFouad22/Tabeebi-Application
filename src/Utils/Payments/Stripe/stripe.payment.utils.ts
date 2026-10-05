@@ -28,7 +28,7 @@ class StripeServices {
     return session;
   }
 
-  constructEvent({
+  async constructEvent({
     payload,
     signature,
     secret = process.env.STRIPE_WEBHOOK_SECRET as string,
@@ -36,7 +36,7 @@ class StripeServices {
     payload: string | Buffer;
     signature: string;
     secret?: string;
-  }): Stripe.Event {
+  }): Promise<Stripe.Event> {
     return this.stripe.webhooks.constructEvent(payload, signature, secret);
   }
 
@@ -75,6 +75,22 @@ class StripeServices {
     }
 
     return intent;
+  }
+
+  async refundPayment(paymentIntentId: string) {
+    try {
+      const refund = await this.stripe.refunds.create({
+        payment_intent: paymentIntentId,
+      });
+
+      return refund;
+    } catch (error: any) {
+      if (error.type === "StripeInvalidRequestError") {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
   }
 }
 export default new StripeServices();

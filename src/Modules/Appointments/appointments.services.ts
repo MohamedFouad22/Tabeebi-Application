@@ -576,7 +576,7 @@ class appointmentServices {
         throw new BadRequestException("Missing stripe-signature header");
       }
 
-      const event = StripeServices.constructEvent({
+      const event = await StripeServices.constructEvent({
         payload: req.body,
         signature,
         secret: process.env.STRIPE_WEBHOOK_SECRET as string,

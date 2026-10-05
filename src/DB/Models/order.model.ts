@@ -36,6 +36,7 @@ export interface IOrder {
   taxFee: number;
 
   intentId?: string;
+  paymentIntentId?: string;
 
   createdAt: Date;
   updatedAt?: Date;
@@ -158,6 +159,7 @@ export const orderSchema = new Schema<IOrder>(
     },
 
     intentId: String,
+    paymentIntentId: String,
   },
   {
     timestamps: true,

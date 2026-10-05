@@ -247,7 +247,10 @@ class OrderServices {
           quantity: 1,
         },
       ],
-      metadata: { order: orderId.toString() },
+      metadata: {
+        order: String(orderId),
+        order_id: String(orderId),
+      },
       mode: "payment",
     });
 
@@ -264,7 +267,7 @@ class OrderServices {
       if (!signature)
         throw new UnauthorizedException("Missing Stripe Signature");
 
-      const event = StripeServices.constructEvent({
+      const event = await StripeServices.constructEvent({
         payload: req.body,
         signature,
         secret: process.env.STRIPE_WEBHOOK_SECRET as string,
@@ -272,7 +275,8 @@ class OrderServices {
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        const order_id = session.metadata?.order;
+        const order_id = session.metadata?.order_id;
+        const paymentIntentId = session.payment_intent as string;
 
         if (order_id) {
           try {
@@ -281,6 +285,7 @@ class OrderServices {
               update: {
                 status: statusEnum.CONFIRMED,
                 paymentStatus: PaymentStatusEnum.PAID,
+                paymentIntentId,
                 $inc: { __v: 1 },
               },
             });
@@ -403,41 +408,80 @@ class OrderServices {
     });
     if (!order) throw new NotFoundException("Order Not Found");
 
-    if (order.paymentMethod === PaymentMethodEnum.CASH) {
-      for (const item of order.items) {
-        const productId = (item.productId as any)._id || item.productId;
-
-        const updateProduct = await this._productModel.updateOne({
-          filter: { _id: productId },
+    try {
+      if (
+        order.paymentStatus === PaymentStatusEnum.UNPAID &&
+        order.paymentMethod === PaymentMethodEnum.CASH &&
+        [
+          statusEnum.PENDING,
+          statusEnum.CONFIRMED,
+          statusEnum.PROCESSING,
+        ].includes(order.status)
+      ) {
+        const updateOrder = await this._orderModel.updateOne({
+          filter,
           update: {
-            $inc: {
-              stock: item.quantity,
-              sold: -item.quantity,
-            },
+            status: statusEnum.CANCELLED,
+            $inc: { __v: 1 },
           },
         });
+        if (!updateOrder)
+          throw new BadRequestException("Failed To Update Order");
+      } else if (
+        order.paymentStatus === PaymentStatusEnum.PAID &&
+        order.paymentMethod === PaymentMethodEnum.CARD &&
+        [
+          statusEnum.PENDING,
+          statusEnum.CONFIRMED,
+          statusEnum.PROCESSING,
+        ].includes(order.status)
+      ) {
+        if (!order.paymentIntentId) {
+          throw new BadRequestException(
+            "Order does not have a paymentIntentId",
+          );
+        }
 
-        if (!updateProduct)
-          throw new BadRequestException("Failed To Update Product");
+        await StripeServices.refundPayment(order.paymentIntentId.toString());
+
+        const updateCardOrder = await this._orderModel.updateOne({
+          filter,
+          update: {
+            status: statusEnum.CANCELLED,
+            $inc: { __v: 1 },
+          },
+        });
+        if (!updateCardOrder)
+          throw new BadRequestException("Failed To Update Order");
+      } else {
+        throw new BadRequestException("Order Can't Canceled");
       }
-    }
 
-    if (
-      order.paymentStatus === PaymentStatusEnum.UNPAID &&
-      order.paymentMethod === PaymentMethodEnum.CASH &&
-      order.status ===
-        (statusEnum.PENDING || statusEnum.CONFIRMED || statusEnum.PROCESSING)
-    ) {
-      const updateOrder = await this._orderModel.updateOne({
-        filter,
-        update: {
-          status: statusEnum.CANCELLED,
-          $inc: { __v: 1 },
-        },
-      });
-      if (!updateOrder) throw new BadRequestException("Failed To Update Order");
-    } else {
-      throw new BadRequestException("Order Can't Canceled ");
+      if (
+        (order.paymentMethod === PaymentMethodEnum.CASH &&
+          order.paymentStatus === PaymentStatusEnum.UNPAID) ||
+        (order.paymentMethod === PaymentMethodEnum.CARD &&
+          order.paymentStatus === PaymentStatusEnum.PAID)
+      ) {
+        for (const item of order.items) {
+          const productId = (item.productId as any)._id || item.productId;
+
+          const updateProduct = await this._productModel.updateOne({
+            filter: { _id: productId },
+            update: {
+              $inc: {
+                stock: item.quantity,
+                sold: -item.quantity,
+              },
+            },
+          });
+
+          if (!updateProduct)
+            throw new BadRequestException("Failed To Update Product");
+        }
+      }
+    } catch (error) {
+      console.log(error);
     }
 
     return res.status(200).json({ message: "Order Canceled Successfully" });
