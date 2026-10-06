@@ -143,3 +143,16 @@ export const createFacilitySchema = {
       }
     }),
 };
+
+export const getFacilitiesSchema = {
+  query: z
+    .strictObject({
+      serviceType: z.enum(MedicalServiceTypeEnum).optional(),
+      labSpecialization: z.enum(labSpecializationEnum).optional(),
+      radiologySpecialty: z.enum(RadiologySpecialtyEnum).optional(),
+      name: z.string().trim().optional(),
+      page: z.string().optional(),
+      limit: z.string().optional(),
+    })
+    .optional(),
+};

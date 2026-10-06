@@ -7,7 +7,10 @@ import {
 } from "../../Utils/Enum/enum.utils";
 import { validation } from "../../Middleware/validation.middleware";
 import medicalCenterServices from "./medicalCenter.services";
-import { createFacilitySchema } from "./medicalCenter.validation";
+import {
+  createFacilitySchema,
+  getFacilitiesSchema,
+} from "./medicalCenter.validation";
 import {
   cloudFileValidtion,
   fileValidation,
@@ -24,6 +27,12 @@ router.post(
   }).single("facilityLogo"),
   validation(createFacilitySchema),
   medicalCenterServices.createCenter,
+);
+
+router.get(
+  "/get-facilities",
+  validation(getFacilitiesSchema),
+  medicalCenterServices.getFacilities,
 );
 
 export default router;
