@@ -280,6 +280,18 @@ class OrderServices {
 
         if (order_id) {
           try {
+            const order = await this._orderModel.findOne({
+              filter: {
+                _id: order_id,
+                paymentStatus: PaymentStatusEnum.UNPAID,
+              },
+            });
+
+            if (!order) {
+              console.warn(`⚠️ Order ${order_id} not found or already paid.`);
+              return res.status(200).json({ received: true });
+            }
+
             const updateResult = await this._orderModel.updateOne({
               filter: { _id: order_id },
               update: {
@@ -289,10 +301,45 @@ class OrderServices {
                 $inc: { __v: 1 },
               },
             });
-            if (updateResult.matchedCount === 0) {
-              console.warn(`⚠️ No Order found in DB for ID: ${order_id}`);
-            } else {
+
+            if (updateResult.matchedCount > 0) {
               console.log(`✅ Order ${order_id} confirmed and paid.`);
+
+              if (order.items && order.items.length > 0) {
+                const bulkOps = order.items.map((item) => {
+                  const productId =
+                    (item.productId as any)._id || item.productId;
+                  return {
+                    updateOne: {
+                      filter: {
+                        _id: productId,
+                        stock: { $gte: item.quantity },
+                      },
+                      update: {
+                        $inc: {
+                          stock: -item.quantity,
+                          sold: item.quantity,
+                        },
+                      },
+                    },
+                  };
+                });
+
+                await this._productModel.bulkWrite(bulkOps);
+                console.log(`📦 Stock updated for order ${order_id}`);
+              }
+
+              await this._cartModel.deleteOne({
+                filter: { _id: order.cartId },
+              });
+              if (order.couponId) {
+                await this._couponModel.updateOne({
+                  filter: { _id: order.couponId },
+                  update: { $inc: { usageCount: 1, __v: 1 } },
+                });
+              }
+            } else {
+              console.warn(`⚠️ No Order found in DB for ID: ${order_id}`);
             }
           } catch (dbError: any) {
             console.error("❌ DB Update Error in Webhook:", dbError.message);
@@ -394,13 +441,18 @@ class OrderServices {
       throw new ForbiddenException("You Not Allowed To Sent User Id");
     }
 
-    const filter: Record<string, any> = { _id: orderId };
-
+    let user;
+    let userData;
     if (req.decoded.role === RoleEnum.USER) {
-      filter.createdBy = req.decoded._id;
+      user = req.decoded._id;
     } else if (req.decoded.role === RoleEnum.ADMIN) {
-      filter.createdBy = userId ? userId : req.decoded._id;
+      user = userId ? userId : req.decoded._id;
+      userData = await this._userModel.findOne({
+        filter: { _id: user },
+      });
     }
+
+    const filter: Record<string, any> = { _id: orderId, createdBy: user };
 
     const order = await this._orderModel.findOne({
       filter,
@@ -480,6 +532,21 @@ class OrderServices {
 
         await this._productModel.bulkWrite(bulkOps);
       }
+
+      eventEmitter.emit("updateOrderStatus", {
+        to:
+          req.decoded.role === RoleEnum.USER
+            ? req.decoded.email
+            : userData?.email,
+        userName:
+          req.decoded.role === RoleEnum.USER
+            ? req.decoded.userName
+            : userData?.userName,
+        status: statusEnum.CANCELLED,
+        total: order.totalAfterDiscount,
+        address: order.address,
+        phone: order.phone,
+      });
 
       return res.status(200).json({ message: "Order Canceled Successfully" });
     } catch (error) {
