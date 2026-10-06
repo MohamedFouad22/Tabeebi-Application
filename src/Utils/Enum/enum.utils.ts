@@ -19,6 +19,7 @@ export enum RoleEnum {
   ADMIN = "ADMIN",
   DOCTOR = "DOCTOR",
   COMPANY = "COMPANY",
+  FACILITY = "FACILITY",
 }
 
 export enum signatureLevelEnum {
@@ -26,6 +27,7 @@ export enum signatureLevelEnum {
   ADMIN = "ADMIN",
   DOCTOR = "DOCTOR",
   COMPANY = "COMPANY",
+  FACILITY = "FACILITY",
 }
 
 export enum TokenTypeEnum {

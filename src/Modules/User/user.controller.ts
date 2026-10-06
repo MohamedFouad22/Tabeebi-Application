@@ -28,6 +28,7 @@ router.get(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.getProfile,
 );
@@ -38,6 +39,7 @@ router.patch(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   validation(freezeAccountSchema),
   userServices.freezeAccount,
@@ -49,6 +51,7 @@ router.patch(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   validation(restoreAccountSchema),
   userServices.restoreAccount,
@@ -60,6 +63,7 @@ router.patch(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   validation(editProfileSchema),
   userServices.editProfile,
@@ -71,6 +75,7 @@ router.post(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.twoAuthFactorRequest,
 );
@@ -81,6 +86,7 @@ router.patch(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.enableTwoAuthFactor,
 );
@@ -91,6 +97,7 @@ router.post(
     RoleEnum.COMPANY,
     RoleEnum.DOCTOR,
     RoleEnum.USER,
+    RoleEnum.FACILITY,
   ]),
   userServices.disableTwoAuthFactorRequest,
 );
@@ -101,6 +108,7 @@ router.patch(
     RoleEnum.COMPANY,
     RoleEnum.DOCTOR,
     RoleEnum.USER,
+    RoleEnum.FACILITY,
   ]),
   validation(disableTwoAuthFactorSchema),
   userServices.disableTwoAuthFactor,
@@ -112,6 +120,7 @@ router.post(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.deleteAccountReq,
 );
@@ -122,6 +131,7 @@ router.delete(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   validation(deleteAccountSchema),
   userServices.deleteAccount,
@@ -133,6 +143,7 @@ router.post(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.inviteUser,
 );
@@ -143,6 +154,7 @@ router.get(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.searchUser,
 );
@@ -153,6 +165,7 @@ router.patch(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.editSlug,
 );
@@ -163,6 +176,7 @@ router.post(
     RoleEnum.DOCTOR,
     RoleEnum.ADMIN,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   cloudFileValidtion({
     storageApproach: storageTypeEnum.MEMORY,
@@ -178,6 +192,7 @@ router.post(
     RoleEnum.DOCTOR,
     RoleEnum.ADMIN,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   cloudFileValidtion({
     storageApproach: storageTypeEnum.MEMORY,
@@ -193,6 +208,7 @@ router.post(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   cloudFileValidtion({
     storageApproach: storageTypeEnum.MEMORY,
@@ -213,6 +229,7 @@ router.delete(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.deleteFile,
 );
@@ -223,6 +240,7 @@ router.delete(
     RoleEnum.ADMIN,
     RoleEnum.DOCTOR,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   userServices.deleteFiles,
 );
@@ -233,6 +251,7 @@ router.post(
     RoleEnum.DOCTOR,
     RoleEnum.ADMIN,
     RoleEnum.COMPANY,
+    RoleEnum.FACILITY,
   ]),
   validation(contactUsSchema),
   userServices.contactUs,

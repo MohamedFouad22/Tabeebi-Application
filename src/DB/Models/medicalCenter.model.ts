@@ -12,14 +12,23 @@ export interface IMedicalCenter {
 
   createdBy: Types.ObjectId;
 
-  serviceType: MedicalServiceTypeEnum[];
+  serviceType: MedicalServiceTypeEnum;
   labSpecialization?: labSpecializationEnum[];
   radiologySpecialty?: RadiologySpecialtyEnum[];
 
   address: string;
   phone: string;
 
+  workingSchedule: {
+    day: string;
+    from: string;
+    to: string;
+    isDayOff: boolean;
+  }[];
+
   facilityLogo: string;
+
+  email?: string;
 
   createdAt: Date;
   updatedAt?: Date;
@@ -43,13 +52,11 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
       required: true,
     },
 
-    serviceType: [
-      {
-        type: String,
-        enum: { values: Object.values(MedicalServiceTypeEnum) },
-        required: true,
-      },
-    ],
+    serviceType: {
+      type: String,
+      enum: { values: Object.values(MedicalServiceTypeEnum) },
+      required: true,
+    },
 
     labSpecialization: [
       {
@@ -86,6 +93,32 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
       type: String,
       required: true,
     },
+
+    workingSchedule: [
+      {
+        day: {
+          type: String,
+          required: true,
+        },
+
+        from: {
+          type: String,
+          required: true,
+        },
+
+        to: {
+          type: String,
+          required: true,
+        },
+
+        isDayOff: {
+          type: Boolean,
+          required: true,
+        },
+      },
+    ],
+
+    email: String,
 
     facilityLogo: {
       type: String,
