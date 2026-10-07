@@ -11,6 +11,7 @@ import {
   createFacilitySchema,
   getFacilitiesSchema,
   getFacilitySchema,
+  updateFacilitySchema,
 } from "./medicalCenter.validation";
 import {
   cloudFileValidtion,
@@ -36,6 +37,22 @@ router.get(
   medicalCenterServices.getFacilities,
 );
 
-router.get("/get-facility/:facilityId", validation(getFacilitySchema),medicalCenterServices.getFacility);
+router.get(
+  "/get-facility/:facilityId",
+  validation(getFacilitySchema),
+  medicalCenterServices.getFacility,
+);
+
+router.patch(
+  "/update-facility/:facilityId{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.FACILITY]),
+  cloudFileValidtion({
+    storageApproach: storageTypeEnum.MEMORY,
+    maxSize: 5,
+    validation: [...fileValidation.image],
+  }).single("facilityLogo"),
+  validation(updateFacilitySchema),
+  medicalCenterServices.updateFacility,
+);
 
 export default router;
