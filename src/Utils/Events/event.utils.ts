@@ -18,6 +18,7 @@ import { disable2faTemplate } from "../Email/Templates/disableTwoAuthFactor.emai
 import { orderConfirmationTemplate } from "../Email/Templates/orderConfirmationTemplate.email";
 import { orderStatusTemplate } from "../Email/Templates/orderStatus.email";
 import { orderStatusUpdateTemplate } from "../Email/Templates/updateOrderStatus.email";
+import { deleteAccountConfirmationTemplate } from "../Email/Templates/deleteFacility.email";
 
 export const eventEmitter = new EventEmitter();
 
@@ -285,5 +286,32 @@ eventEmitter.on("updateOrderStatus", async (data: IEmail) => {
     await sendEmail(data);
   } catch (error) {
     console.log("Failed To Send Update Order Status Email ❌");
+  }
+});
+
+eventEmitter.on("deleteFacilityRequest", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.DELETE_FACILITY_REQUEST;
+    data.html = deleteAccountRequestTemplate(
+      data.code as number,
+      data.firstName as string,
+      SubjectEnum.DELETE_FACILITY_REQUEST,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Delete Facility Request Email ❌");
+  }
+});
+
+eventEmitter.on("deleteFacility", async (data: IEmail) => {
+  try {
+    data.subject = SubjectEnum.DELETE_FACILITY;
+    data.html = deleteAccountConfirmationTemplate(
+      data.firstName as string,
+      SubjectEnum.DELETE_FACILITY,
+    );
+    await sendEmail(data);
+  } catch (error) {
+    console.log("Failed To Send Delete Facility Email ❌");
   }
 });

@@ -1,5 +1,6 @@
 import * as z from "zod";
 import {
+  facilityAccountStatusEnum,
   labSpecializationEnum,
   MedicalServiceTypeEnum,
   RadiologySpecialtyEnum,
@@ -307,4 +308,54 @@ export const updateFacilitySchema = {
         });
       }
     }),
+};
+
+export const accountStatusSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+    userId: z
+      .string()
+      .refine((value) => Types.ObjectId.isValid(value), {
+        message: "Invalid User ID Format",
+      })
+      .optional(),
+  }),
+  query: z.strictObject({
+    slug: z
+      .enum(facilityAccountStatusEnum)
+      .default(facilityAccountStatusEnum.DISABLE),
+  }),
+};
+
+export const deleteFacilityReqSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+    userId: z
+      .string()
+      .refine((value) => Types.ObjectId.isValid(value), {
+        message: "Invalid User ID Format",
+      })
+      .optional(),
+  }),
+};
+
+export const deleteAccountSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+    userId: z
+      .string()
+      .refine((value) => Types.ObjectId.isValid(value), {
+        message: "Invalid User ID Format",
+      })
+      .optional(),
+  }),
+  body: z.strictObject({
+    otp: z.string(),
+  }),
 };

@@ -141,6 +141,11 @@ export enum RadiologySpecialtyEnum {
   DEXA_SCAN = "DEXA_SCAN",
 }
 
+export enum facilityAccountStatusEnum {
+  ACTIVE = "ACTIVE",
+  DISABLE = "DISABLE",
+}
+
 export enum SubjectEnum {
   CONFIRM_EMAIL = "Please Confirm Your Email",
   WELCOME_EMAIL = "Welcome To The Tabeebi Application",
@@ -158,4 +163,6 @@ export enum SubjectEnum {
   CONFIRM_ORDER_EMAIL = "Confirm Your Order",
   ORDER_STATUS_EMAIL = "Your Order Status",
   UPDATE_ORDER_STATUS = "Your Order Status",
+  DELETE_FACILITY_REQUEST = "Please Confirm That You Want To Delete Your Account",
+  DELETE_FACILITY = "Your Account Has Been Permanently Deleted",
 }

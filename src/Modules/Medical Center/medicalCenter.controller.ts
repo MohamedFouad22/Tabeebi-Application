@@ -8,7 +8,10 @@ import {
 import { validation } from "../../Middleware/validation.middleware";
 import medicalCenterServices from "./medicalCenter.services";
 import {
+  accountStatusSchema,
   createFacilitySchema,
+  deleteAccountSchema,
+  deleteFacilityReqSchema,
   getFacilitiesSchema,
   getFacilitySchema,
   updateFacilitySchema,
@@ -53,6 +56,27 @@ router.patch(
   }).single("facilityLogo"),
   validation(updateFacilitySchema),
   medicalCenterServices.updateFacility,
+);
+
+router.patch(
+  "/accout-status/:facilityId{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.FACILITY]),
+  validation(accountStatusSchema),
+  medicalCenterServices.accountStatus,
+);
+
+router.patch(
+  "/delete-facility-req/:facilityId{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.FACILITY]),
+  validation(deleteFacilityReqSchema),
+  medicalCenterServices.deleteFacilityRequest,
+);
+
+router.delete(
+  "/delete-facility/:facilityId{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.FACILITY, RoleEnum.ADMIN]),
+  validation(deleteAccountSchema),
+  medicalCenterServices.deleteFacility,
 );
 
 export default router;

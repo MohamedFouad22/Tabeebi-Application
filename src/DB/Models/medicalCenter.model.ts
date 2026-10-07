@@ -1,5 +1,6 @@
 import { HydratedDocument, model, models, Schema, Types } from "mongoose";
 import {
+  facilityAccountStatusEnum,
   labSpecializationEnum,
   MedicalServiceTypeEnum,
   RadiologySpecialtyEnum,
@@ -29,6 +30,13 @@ export interface IMedicalCenter {
   facilityLogo: string;
 
   email?: string;
+
+  accountStatus?: facilityAccountStatusEnum;
+  statusUpdatedBy?: Types.ObjectId;
+  updateStatusOTP?: string;
+  statusOTPExpiredAt?: Date;
+  deleteFacilityOTP?: string;
+  deleteFacilityOTPExpiredAt?: Date;
 
   createdAt: Date;
   updatedAt?: Date;
@@ -124,6 +132,16 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
       type: String,
       required: true,
     },
+
+    accountStatus: {
+      enum: { values: Object.values(facilityAccountStatusEnum) },
+    },
+
+    statusUpdatedBy: Types.ObjectId,
+    updateStatusOTP: String,
+    statusOTPExpiredAt: Date,
+    deleteFacilityOTP: String,
+    deleteFacilityOTPExpiredAt: Date,
   },
   {
     timestamps: true,

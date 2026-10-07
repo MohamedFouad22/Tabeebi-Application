@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import {
+  accountStatusDTO,
+  accountStatusParamsDTO,
   createClinicDTO,
+  deleteAccountDTO,
+  deleteAccountParamsDTO,
+  deleteFacilityDTO,
   getFacilitiesDTO,
   getFacilityDTO,
   updateFacilityDTO,
@@ -14,10 +19,20 @@ import {
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
-import { MedicalServiceTypeEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
+import {
+  facilityAccountStatusEnum,
+  MedicalServiceTypeEnum,
+  RoleEnum,
+} from "../../Utils/Enum/enum.utils";
+import { eventEmitter } from "../../Utils/Events/event.utils";
+import { userModel } from "../../DB/Models/user.model";
+import { UserRepository } from "../../DB/Repositories/user.repository";
+import { generateOtp } from "../../Utils/Security/OTP/generateOtp.utils";
+import { compareData, hashData } from "../../Utils/Security/Hash/hash.utils";
 
 class medicalCenterServices {
   private _medicalCenter = new medicalCenterRepository(medicalCenterModel);
+  private _userModel = new UserRepository(userModel);
   constructor() {}
 
   createCenter = async (req: Request, res: Response): Promise<Response> => {
@@ -230,7 +245,7 @@ class medicalCenterServices {
       if (labSpecialization !== undefined) {
         updateFields.labSpecialization = labSpecialization;
       }
-      updateFields.radiologySpecialty = []; 
+      updateFields.radiologySpecialty = [];
     }
 
     if (targetServiceType === MedicalServiceTypeEnum.RADIOLOGY) {
@@ -248,7 +263,7 @@ class medicalCenterServices {
       if (radiologySpecialty !== undefined) {
         updateFields.radiologySpecialty = radiologySpecialty;
       }
-      updateFields.labSpecialization = []; 
+      updateFields.labSpecialization = [];
     }
 
     let newLogoKey: string | undefined;
@@ -292,6 +307,153 @@ class medicalCenterServices {
       }
       throw error;
     }
+  };
+
+  accountStatus = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId, userId } = req.params as accountStatusParamsDTO;
+    const { slug } = req.query as accountStatusDTO;
+
+    const filter: Record<string, any> = { _id: facilityId };
+    const update: Record<string, any> = {};
+
+    let user;
+    let userData;
+    if (req.decoded.role === RoleEnum.FACILITY) {
+      filter.createdBy = req.decoded._id;
+      user = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.ADMIN) {
+      if (userId !== undefined) {
+        userData = await this._userModel.findOne({
+          filter: { _id: userId },
+        });
+        if (!userData) throw new NotFoundException("User Not Found");
+      }
+      filter.createdBy = userId !== undefined ? userId : req.decoded._id;
+      user = userId !== undefined ? userId : req.decoded._id;
+    }
+
+    const checkFacility = await this._medicalCenter.findOne({ filter });
+    if (!checkFacility) throw new NotFoundException("Facility Not Found");
+
+    if (checkFacility.accountStatus === slug) {
+      throw new BadRequestException("Can't Update Account Status");
+    }
+    update.accountStatus = slug;
+    update.statusUpdatedBy = user;
+
+    const status = await this._medicalCenter.updateOne({ filter, update });
+    if (status.modifiedCount === 0)
+      throw new BadRequestException("Failed To Update Account Status");
+
+    return res
+      .status(200)
+      .json({ message: "Account Status Updated Successfully" });
+  };
+
+  deleteFacilityRequest = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { facilityId, userId } = req.params as deleteFacilityDTO;
+
+    const filter: Record<string, any> = { _id: facilityId };
+    const update: Record<string, any> = {};
+
+    let user;
+    let userData;
+    if (req.decoded.role === RoleEnum.FACILITY) {
+      filter.createdBy = req.decoded._id;
+      user = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.ADMIN) {
+      if (userId !== undefined) {
+        userData = await this._userModel.findOne({
+          filter: { _id: userId },
+        });
+        if (!userData) throw new NotFoundException("User Not Found");
+      }
+      filter.createdBy = userId !== undefined ? userId : req.decoded._id;
+      user = userId !== undefined ? userId : req.decoded._id;
+    }
+
+    const checkFacility = await this._medicalCenter.findOne({ filter });
+    if (!checkFacility) throw new NotFoundException("Facility Not Found");
+
+    const otp = await generateOtp();
+
+    update.deleteFacilityOTP = await hashData(otp.toString());
+    update.deleteFacilityOTPExpiredAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    const updateFacility = await this._medicalCenter.updateOne({
+      filter,
+      update,
+    });
+
+    if (updateFacility.modifiedCount === 0)
+      throw new BadRequestException("Failed To Update Facility");
+
+    eventEmitter.emit("deleteFacilityRequest", {
+      to: userData?.email ? userData?.email : req.decoded.email,
+      code: otp.toString(),
+      firstName: userData?.userName ? userData?.userName : req.decoded.userName,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Delete Facility Email Sent Successfully" });
+  };
+
+  deleteFacility = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId, userId } = req.params as deleteAccountParamsDTO;
+    const { otp }: deleteAccountDTO = req.body;
+
+    const filter: Record<string, any> = { _id: facilityId };
+    let user;
+    let userData;
+
+    if (req.decoded.role === RoleEnum.FACILITY) {
+      filter.createdBy = req.decoded._id;
+      user = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.ADMIN) {
+      if (userId !== undefined) {
+        userData = await this._userModel.findOne({
+          filter: { _id: userId },
+        });
+        if (!userData) throw new NotFoundException("User Not Found");
+      }
+      filter.createdBy = userId !== undefined ? userId : req.decoded._id;
+      user = userId !== undefined ? userId : req.decoded._id;
+    }
+
+    const checkFacility = await this._medicalCenter.findOne({
+      filter: {
+        ...filter,
+        deleteFacilityOTP: { $exists: true },
+        deleteFacilityOTPExpiredAt: { $exists: true },
+      },
+    });
+    if (!checkFacility) throw new NotFoundException("Facility Not Found");
+
+    if (
+      checkFacility.deleteFacilityOTPExpiredAt &&
+      new Date(Date.now()) > checkFacility.deleteFacilityOTPExpiredAt
+    ) {
+      throw new BadRequestException("OTP Expired");
+    }
+
+    if (!(await compareData(otp, checkFacility.deleteFacilityOTP))) {
+      throw new BadRequestException("Invalid OTP");
+    }
+
+    const deleteFacility = await this._medicalCenter.deleteOne({ filter });
+    if (deleteFacility.deletedCount === 0)
+      throw new BadRequestException("Failed To Delete Facility");
+
+    eventEmitter.emit("deleteFacility", {
+      to: userData?.email ? userData?.email : req.decoded.email,
+      firstName: userData?.userName ? userData?.userName : req.decoded.userName,
+    });
+
+    return res.status(200).json({ message: "Facility Deleted Successfully" });
   };
 }
 export default new medicalCenterServices();
