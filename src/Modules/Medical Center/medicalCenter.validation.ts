@@ -5,6 +5,7 @@ import {
   RadiologySpecialtyEnum,
 } from "../../Utils/Enum/enum.utils";
 import { generalFields } from "../../Middleware/generalFields.utils";
+import { Types } from "mongoose";
 
 export const createFacilitySchema = {
   body: z
@@ -155,4 +156,12 @@ export const getFacilitiesSchema = {
       limit: z.string().optional(),
     })
     .optional(),
+};
+
+export const getFacilitySchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+  }),
 };

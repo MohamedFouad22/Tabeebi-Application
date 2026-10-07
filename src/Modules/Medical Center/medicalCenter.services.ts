@@ -1,10 +1,15 @@
 import { Request, Response } from "express";
-import { createClinicDTO, getFacilitiesDTO } from "./medicalCenter.dto";
+import {
+  createClinicDTO,
+  getFacilitiesDTO,
+  getFacilityDTO,
+} from "./medicalCenter.dto";
 import { medicalCenterRepository } from "../../DB/Repositories/medicalCenter.repository";
 import { medicalCenterModel } from "../../DB/Models/medicalCenter.model";
 import {
   BadRequestException,
   ConflictException,
+  NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
 
@@ -140,6 +145,24 @@ class medicalCenterServices {
 
       facilities,
     });
+  };
+
+  getFacility = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId } = req.params as getFacilityDTO;
+
+    const filter: Record<string, any> = { _id: facilityId };
+
+    const facility = await this._medicalCenter.findOne({
+      filter,
+      options: {
+        populate: [{ path: "createdBy", select: "firstName lastName email" }],
+      },
+    });
+    if (!facility) throw new NotFoundException("Facility Not Found");
+
+    return res
+      .status(200)
+      .json({ message: "Get Facility Successfully", Data: { facility } });
   };
 }
 export default new medicalCenterServices();

@@ -10,6 +10,7 @@ import medicalCenterServices from "./medicalCenter.services";
 import {
   createFacilitySchema,
   getFacilitiesSchema,
+  getFacilitySchema,
 } from "./medicalCenter.validation";
 import {
   cloudFileValidtion,
@@ -34,5 +35,7 @@ router.get(
   validation(getFacilitiesSchema),
   medicalCenterServices.getFacilities,
 );
+
+router.get("/get-facility/:facilityId", validation(getFacilitySchema),medicalCenterServices.getFacility);
 
 export default router;
