@@ -396,3 +396,11 @@ export const updateTestsSchema = {
     ),
   }),
 };
+
+export const getTestsSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+  }),
+};

@@ -14,6 +14,7 @@ import {
   deleteFacilityReqSchema,
   getFacilitiesSchema,
   getFacilitySchema,
+  getTestsSchema,
   updateFacilitySchema,
   updateTestsSchema,
 } from "./medicalCenter.validation";
@@ -85,6 +86,12 @@ router.post(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.FACILITY]),
   validation(updateTestsSchema),
   medicalCenterServices.updateTests,
+);
+
+router.get(
+  "/get-tests/:facilityId",
+  validation(getTestsSchema),
+  medicalCenterServices.getTests,
 );
 
 export default router;

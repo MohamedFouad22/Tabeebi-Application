@@ -8,6 +8,7 @@ import {
   deleteFacilityDTO,
   getFacilitiesDTO,
   getFacilityDTO,
+  getTestsDTO,
   updateFacilityDTO,
   updateFacilityParamsDTO,
   updateTestsDTO,
@@ -552,6 +553,19 @@ class medicalCenterServices {
     }
 
     return res.status(200).json({ message: "Update Tests Successfully" });
+  };
+
+  getTests = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId } = req.params as getTestsDTO;
+
+    const filter: Record<string, any> = { _id: facilityId };
+
+    const facility = await this._medicalCenter.findOne({ filter });
+    if (!facility) throw new NotFoundException("Facility Not Found");
+
+    const tests = facility.tests || [];
+
+    return res.status(200).json({ message: "Get Tests Successfully", tests });
   };
 }
 export default new medicalCenterServices();
