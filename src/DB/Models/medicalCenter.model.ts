@@ -6,6 +6,15 @@ import {
   RadiologySpecialtyEnum,
 } from "../../Utils/Enum/enum.utils";
 
+export interface IMedicalCenterTest {
+  _id?: Types.ObjectId;
+  testName: string;
+  price: number;
+  precautions?: string;
+  resultDuration?: string;
+  isAvailable?: boolean;
+}
+
 export interface IMedicalCenter {
   _id: Types.ObjectId;
 
@@ -26,6 +35,8 @@ export interface IMedicalCenter {
     to: string;
     isDayOff: boolean;
   }[];
+
+  tests?: IMedicalCenterTest[];
 
   facilityLogo: string;
 
@@ -71,9 +82,10 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
         type: String,
         enum: { values: Object.values(labSpecializationEnum) },
         required: function (this: HMedicalCenterDocument) {
-          return this.serviceType.includes(MedicalServiceTypeEnum.LABORATORY)
-            ? true
-            : false;
+          return (
+            this.serviceType?.includes(MedicalServiceTypeEnum.LABORATORY) ??
+            false
+          );
         },
       },
     ],
@@ -83,9 +95,10 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
         type: String,
         enum: { values: Object.values(RadiologySpecialtyEnum) },
         required: function (this: HMedicalCenterDocument) {
-          return this.serviceType.includes(MedicalServiceTypeEnum.RADIOLOGY)
-            ? true
-            : false;
+          return (
+            this.serviceType?.includes(MedicalServiceTypeEnum.RADIOLOGY) ??
+            false
+          );
         },
       },
     ],
@@ -126,6 +139,33 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
       },
     ],
 
+    tests: [
+      {
+        testName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        precautions: {
+          type: String,
+          trim: true,
+        },
+        resultDuration: {
+          type: String,
+          trim: true,
+        },
+        isAvailable: {
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
+
     email: String,
 
     facilityLogo: {
@@ -134,6 +174,7 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
     },
 
     accountStatus: {
+      type: String,
       enum: { values: Object.values(facilityAccountStatusEnum) },
     },
 
@@ -151,6 +192,7 @@ export const medicalCenterSchema = new Schema<IMedicalCenter>(
 );
 
 medicalCenterSchema.index({ createdBy: 1 });
+medicalCenterSchema.index({ _id: 1, "tests.testName": 1 });
 
 export type HMedicalCenterDocument = HydratedDocument<IMedicalCenter>;
 export const medicalCenterModel =

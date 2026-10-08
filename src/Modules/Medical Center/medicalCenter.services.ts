@@ -10,6 +10,8 @@ import {
   getFacilityDTO,
   updateFacilityDTO,
   updateFacilityParamsDTO,
+  updateTestsDTO,
+  updateTestsParamsDTO,
 } from "./medicalCenter.dto";
 import { medicalCenterRepository } from "../../DB/Repositories/medicalCenter.repository";
 import { medicalCenterModel } from "../../DB/Models/medicalCenter.model";
@@ -19,11 +21,7 @@ import {
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
-import {
-  facilityAccountStatusEnum,
-  MedicalServiceTypeEnum,
-  RoleEnum,
-} from "../../Utils/Enum/enum.utils";
+import { MedicalServiceTypeEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { userModel } from "../../DB/Models/user.model";
 import { UserRepository } from "../../DB/Repositories/user.repository";
@@ -454,6 +452,106 @@ class medicalCenterServices {
     });
 
     return res.status(200).json({ message: "Facility Deleted Successfully" });
+  };
+
+  updateTests = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId, userId } = req.params as updateTestsParamsDTO;
+    const { tests }: updateTestsDTO = req.body;
+
+    const filter: Record<string, any> = { _id: facilityId };
+
+    let user;
+    if (req.decoded.role === RoleEnum.FACILITY) {
+      filter.createdBy = req.decoded._id;
+      user = req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.ADMIN) {
+      filter.createdBy = userId !== undefined ? userId : req.decoded._id;
+      user = userId !== undefined ? userId : req.decoded._id;
+    }
+
+    const facility = await this._medicalCenter.findOne({ filter });
+    if (!facility) throw new NotFoundException("Facility Not Found");
+
+    const normalizedTests = tests.map((test) => ({
+      ...test,
+      testName: test.testName.trim(),
+    }));
+
+    const testNames = normalizedTests.map((test) => test.testName);
+
+    if (new Set(testNames).size !== testNames.length) {
+      throw new BadRequestException(
+        "Duplicate Tests Are Not Allowed In Payload",
+      );
+    }
+
+    const existingTest = await this._medicalCenter.findOne({
+      filter: {
+        _id: facilityId,
+        "tests.testName": { $in: testNames },
+      },
+    });
+
+    if (existingTest) {
+      throw new BadRequestException(
+        "One Or More Tests Already Exist In Facility",
+      );
+    }
+
+    if (facility.serviceType === MedicalServiceTypeEnum.LABORATORY) {
+      const labSpecs = (facility.labSpecialization || []) as string[];
+      if (!labSpecs.length) {
+        throw new BadRequestException(
+          "No Laboratory Specializations Found For This Facility",
+        );
+      }
+
+      const hasInvalidTest = testNames.some(
+        (testName) => !labSpecs.includes(testName),
+      );
+
+      if (hasInvalidTest) {
+        throw new BadRequestException(
+          "One Or More Tests Are Not Covered By Your Lab Specializations",
+        );
+      }
+    } else if (facility.serviceType === MedicalServiceTypeEnum.RADIOLOGY) {
+      const radSpecs = (facility.radiologySpecialty || []) as string[];
+      if (!radSpecs.length) {
+        throw new BadRequestException(
+          "No Radiology Specializations Found For This Facility",
+        );
+      }
+
+      const hasInvalidTest = testNames.some(
+        (testName) => !radSpecs.includes(testName),
+      );
+
+      if (hasInvalidTest) {
+        throw new BadRequestException(
+          "One Or More Tests Are Not Covered By Your Radiology Specializations",
+        );
+      }
+    }
+
+    const updateFacility = await this._medicalCenter.updateOne({
+      filter: {
+        ...filter,
+        "tests.testName": { $nin: testNames },
+      },
+      update: {
+        $push: { tests: { $each: normalizedTests } },
+        $inc: { __v: 1 },
+      },
+    });
+
+    if (updateFacility.modifiedCount === 0) {
+      throw new BadRequestException(
+        "Facility Failed To Update Or Test Already Exists",
+      );
+    }
+
+    return res.status(200).json({ message: "Update Tests Successfully" });
   };
 }
 export default new medicalCenterServices();

@@ -15,6 +15,7 @@ import {
   getFacilitiesSchema,
   getFacilitySchema,
   updateFacilitySchema,
+  updateTestsSchema,
 } from "./medicalCenter.validation";
 import {
   cloudFileValidtion,
@@ -77,6 +78,13 @@ router.delete(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.FACILITY, RoleEnum.ADMIN]),
   validation(deleteAccountSchema),
   medicalCenterServices.deleteFacility,
+);
+
+router.post(
+  "/update-tests/:facilityId{/:userId}",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.FACILITY]),
+  validation(updateTestsSchema),
+  medicalCenterServices.updateTests,
 );
 
 export default router;

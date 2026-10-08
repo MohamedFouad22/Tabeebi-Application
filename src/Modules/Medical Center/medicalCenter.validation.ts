@@ -359,3 +359,40 @@ export const deleteAccountSchema = {
     otp: z.string(),
   }),
 };
+
+export const updateTestsSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+    userId: z
+      .string()
+      .refine((value) => Types.ObjectId.isValid(value), {
+        message: "Invalid User ID Format",
+      })
+      .optional(),
+  }),
+
+  body: z.strictObject({
+    tests: z.preprocess(
+      (val) => {
+        if (typeof val !== "string") return val;
+
+        try {
+          return JSON.parse(val);
+        } catch {
+          return val;
+        }
+      },
+      z.array(
+        z.strictObject({
+          testName: z.string().trim(),
+          price: z.number().min(0),
+          precautions: z.string().trim(),
+          resultDuration: z.string().trim(),
+          isAvailable: z.boolean().default(true),
+        }),
+      ),
+    ),
+  }),
+};
