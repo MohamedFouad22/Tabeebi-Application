@@ -404,3 +404,28 @@ export const getTestsSchema = {
     }),
   }),
 };
+
+export const updateTestDetailesSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+    testId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Test ID Format",
+    }),
+    userId: z
+      .string()
+      .refine((value) => Types.ObjectId.isValid(value), {
+        message: "Invalid User ID Format",
+      })
+      .optional(),
+  }),
+
+  body: z.strictObject({
+    testName: z.string().trim().optional(),
+    price: z.number().min(0).optional(),
+    precautions: z.string().trim().optional(),
+    resultDuration: z.string().trim().optional(),
+    isAvailable: z.boolean().default(true).optional(),
+  }),
+};

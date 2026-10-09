@@ -8,6 +8,7 @@ import {
   getFacilitySchema,
   getTestsSchema,
   updateFacilitySchema,
+  updateTestDetailesSchema,
   updateTestsSchema,
 } from "./medicalCenter.validation";
 
@@ -26,3 +27,9 @@ export type deleteAccountDTO = z.infer<typeof deleteAccountSchema.body>;
 export type updateTestsParamsDTO = z.infer<typeof updateTestsSchema.params>;
 export type updateTestsDTO = z.infer<typeof updateTestsSchema.body>;
 export type getTestsDTO = z.infer<typeof getTestsSchema.params>;
+export type updateTestDetailesParamsDTO = z.infer<
+  typeof updateTestDetailesSchema.params
+>;
+export type updateTestDetailesDTO = z.infer<
+  typeof updateTestDetailesSchema.body
+>;

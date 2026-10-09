@@ -11,6 +11,8 @@ import {
   getTestsDTO,
   updateFacilityDTO,
   updateFacilityParamsDTO,
+  updateTestDetailesDTO,
+  updateTestDetailesParamsDTO,
   updateTestsDTO,
   updateTestsParamsDTO,
 } from "./medicalCenter.dto";
@@ -22,7 +24,12 @@ import {
   NotFoundException,
 } from "../../Utils/Security/Error/global.error.utils";
 import { deleteFile, uploadFile } from "../../Utils/Multer/aws.services.utils";
-import { MedicalServiceTypeEnum, RoleEnum } from "../../Utils/Enum/enum.utils";
+import {
+  labSpecializationEnum,
+  MedicalServiceTypeEnum,
+  RadiologySpecialtyEnum,
+  RoleEnum,
+} from "../../Utils/Enum/enum.utils";
 import { eventEmitter } from "../../Utils/Events/event.utils";
 import { userModel } from "../../DB/Models/user.model";
 import { UserRepository } from "../../DB/Repositories/user.repository";
@@ -566,6 +573,124 @@ class medicalCenterServices {
     const tests = facility.tests || [];
 
     return res.status(200).json({ message: "Get Tests Successfully", tests });
+  };
+
+  updateTest = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId, userId, testId } =
+      req.params as updateTestDetailesParamsDTO;
+
+    const {
+      testName,
+      price,
+      precautions,
+      resultDuration,
+      isAvailable,
+    }: updateTestDetailesDTO = req.body;
+
+    const filter: Record<string, any> = {
+      _id: facilityId,
+      "tests._id": testId,
+    };
+
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      filter.createdBy = userId !== undefined ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.FACILITY) {
+      filter.createdBy = req.decoded._id;
+    }
+
+    const facility = await this._medicalCenter.findOne({
+      filter,
+    });
+
+    if (!facility) {
+      throw new NotFoundException("Facility Not Found");
+    }
+
+    if (testName !== undefined) {
+      const trimmedTestName = testName.trim();
+
+      if (!trimmedTestName) {
+        throw new BadRequestException("Test Name Cannot Be Empty");
+      }
+
+      const normalizedTestName = trimmedTestName.toLowerCase();
+
+      const isDuplicate = facility.tests?.some(
+        (test) =>
+          test._id?.toString() !== testId &&
+          test.testName.trim().toLowerCase() === normalizedTestName,
+      );
+
+      if (isDuplicate) {
+        throw new BadRequestException("This Test Already Exists");
+      }
+
+      let isValidSpecialization = false;
+
+      if (facility.serviceType === MedicalServiceTypeEnum.LABORATORY) {
+        isValidSpecialization =
+          Object.values(labSpecializationEnum).some(
+            (specialization) => specialization === trimmedTestName,
+          ) &&
+          facility.labSpecialization?.includes(
+            trimmedTestName as labSpecializationEnum,
+          ) === true;
+      } else if (facility.serviceType === MedicalServiceTypeEnum.RADIOLOGY) {
+        isValidSpecialization =
+          Object.values(RadiologySpecialtyEnum).some(
+            (specialization) => specialization === trimmedTestName,
+          ) &&
+          facility.radiologySpecialty?.includes(
+            trimmedTestName as RadiologySpecialtyEnum,
+          ) === true;
+      }
+
+      if (!isValidSpecialization) {
+        throw new NotFoundException("This Test Not Found In Services");
+      }
+    }
+
+    const updateFields: Record<string, any> = {};
+
+    if (testName !== undefined) {
+      updateFields["tests.$.testName"] = testName.trim();
+    }
+
+    if (price !== undefined) {
+      updateFields["tests.$.price"] = price;
+    }
+
+    if (precautions !== undefined) {
+      updateFields["tests.$.precautions"] = precautions.trim();
+    }
+
+    if (resultDuration !== undefined) {
+      updateFields["tests.$.resultDuration"] = resultDuration.trim();
+    }
+
+    if (isAvailable !== undefined) {
+      updateFields["tests.$.isAvailable"] = isAvailable;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      throw new BadRequestException("No Fields Provided To Update");
+    }
+
+    const updateTest = await this._medicalCenter.findOneAndUpdate({
+      filter,
+      update: {
+        $set: updateFields,
+        $inc: { __v: 1 },
+      },
+    });
+
+    if (!updateTest) {
+      throw new BadRequestException("Failed To Update Test");
+    }
+
+    return res.status(200).json({
+      message: "Test Updated Successfully",
+    });
   };
 }
 export default new medicalCenterServices();

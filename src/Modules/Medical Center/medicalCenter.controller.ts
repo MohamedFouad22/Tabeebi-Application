@@ -16,6 +16,7 @@ import {
   getFacilitySchema,
   getTestsSchema,
   updateFacilitySchema,
+  updateTestDetailesSchema,
   updateTestsSchema,
 } from "./medicalCenter.validation";
 import {
@@ -92,6 +93,13 @@ router.get(
   "/get-tests/:facilityId",
   validation(getTestsSchema),
   medicalCenterServices.getTests,
+);
+
+router.patch(
+  "/update-test/:facilityId{/:userId}/:testId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.FACILITY, RoleEnum.ADMIN]),
+  validation(updateTestDetailesSchema),
+  medicalCenterServices.updateTest,
 );
 
 export default router;
