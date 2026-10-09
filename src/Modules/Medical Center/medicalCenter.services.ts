@@ -6,6 +6,7 @@ import {
   deleteAccountDTO,
   deleteAccountParamsDTO,
   deleteFacilityDTO,
+  deleteTestDTO,
   getFacilitiesDTO,
   getFacilityDTO,
   getTestsDTO,
@@ -691,6 +692,37 @@ class medicalCenterServices {
     return res.status(200).json({
       message: "Test Updated Successfully",
     });
+  };
+
+  deleteTest = async (req: Request, res: Response): Promise<Response> => {
+    const { facilityId, userId, testId } = req.params as deleteTestDTO;
+
+    const filter: Record<string, any> = {
+      _id: facilityId,
+      "tests._id": testId,
+    };
+
+    if (req.decoded.role === RoleEnum.ADMIN) {
+      filter.createdBy = userId !== undefined ? userId : req.decoded._id;
+    } else if (req.decoded.role === RoleEnum.FACILITY) {
+      filter.createdBy = req.decoded._id;
+    }
+
+    const deletedResult = await this._medicalCenter.findOneAndUpdate({
+      filter,
+      update: {
+        $pull: { tests: { _id: testId } },
+        $inc: { __v: 1 },
+      },
+    });
+
+    if (!deletedResult) {
+      throw new NotFoundException(
+        "Facility Not Found Or Test Not Found In This Facility",
+      );
+    }
+
+    return res.status(200).json({ message: "Test Deleted Successfully" });
   };
 }
 export default new medicalCenterServices();

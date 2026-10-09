@@ -12,6 +12,7 @@ import {
   createFacilitySchema,
   deleteAccountSchema,
   deleteFacilityReqSchema,
+  deleteTestSchema,
   getFacilitiesSchema,
   getFacilitySchema,
   getTestsSchema,
@@ -100,6 +101,13 @@ router.patch(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.FACILITY, RoleEnum.ADMIN]),
   validation(updateTestDetailesSchema),
   medicalCenterServices.updateTest,
+);
+
+router.delete(
+  "/delete-test/:facilityId{/:userId}/:testId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.FACILITY, RoleEnum.ADMIN]),
+  validation(deleteTestSchema),
+  medicalCenterServices.deleteTest,
 );
 
 export default router;

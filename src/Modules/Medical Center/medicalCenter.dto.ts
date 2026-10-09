@@ -4,6 +4,7 @@ import {
   createFacilitySchema,
   deleteAccountSchema,
   deleteFacilityReqSchema,
+  deleteTestSchema,
   getFacilitiesSchema,
   getFacilitySchema,
   getTestsSchema,
@@ -32,4 +33,7 @@ export type updateTestDetailesParamsDTO = z.infer<
 >;
 export type updateTestDetailesDTO = z.infer<
   typeof updateTestDetailesSchema.body
+>;
+export type deleteTestDTO = z.infer<
+  typeof deleteTestSchema.params
 >;

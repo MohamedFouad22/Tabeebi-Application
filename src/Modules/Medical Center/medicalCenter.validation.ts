@@ -429,3 +429,20 @@ export const updateTestDetailesSchema = {
     isAvailable: z.boolean().default(true).optional(),
   }),
 };
+
+export const deleteTestSchema = {
+  params: z.strictObject({
+    facilityId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Facility ID Format",
+    }),
+    testId: z.string().refine((value) => Types.ObjectId.isValid(value), {
+      message: "Invalid Test ID Format",
+    }),
+    userId: z
+      .string()
+      .refine((value) => Types.ObjectId.isValid(value), {
+        message: "Invalid User ID Format",
+      })
+      .optional(),
+  }),
+};
