@@ -423,7 +423,6 @@ class appointmentServices {
     const { appointmentId } = req.params as cancelAppointmentDTO;
     const filter: Record<string, any> = {
       _id: appointmentId,
-      status: statusEnum.PENDING,
     };
 
     if (req.decoded.role === RoleEnum.USER) {
@@ -432,26 +431,81 @@ class appointmentServices {
       filter.doctorId = req.decoded._id;
     }
 
-    const updateAppointment = await this._bookModel.findOneAndUpdate({
+    const appointment = await this._bookModel.findOne({
       filter,
-      update: {
-        status: statusEnum.CANCELLED,
-        $unset: {
-          bookingDate: true,
-          workingSchedule: true,
-          bookingDateExpiredAt: true,
-        },
-        $inc: { __v: 1 },
-      },
     });
-    if (!updateAppointment)
-      throw new NotFoundException(
-        "Failed To Update Appointment Or Is It No Longer Possible To Cancel The Appointment",
-      );
+    if (!appointment) throw new NotFoundException("This Appointment Not Found");
 
-    return res
-      .status(200)
-      .json({ message: "Appointment Canceled Successfully" });
+    try {
+      if (
+        appointment.paymentStatus === PaymentStatusEnum.UNPAID &&
+        appointment.paymentMethod === PaymentMethodEnum.CASH &&
+        [
+          statusEnum.PENDING,
+          statusEnum.CONFIRMED,
+          statusEnum.PROCESSING,
+        ].includes(appointment.status as statusEnum)
+      ) {
+        const updateAppointment = await this._bookModel.updateOne({
+          filter,
+          update: {
+            status: statusEnum.CANCELLED,
+            $unset: {
+              bookingDate: true,
+              workingSchedule: true,
+              bookingDateExpiredAt: true,
+            },
+            $inc: { __v: 1 },
+          },
+        });
+        if (updateAppointment.modifiedCount === 0)
+          throw new NotFoundException(
+            "Failed To Update Appointment Or Is It No Longer Possible To Cancel The Appointment",
+          );
+      } else if (
+        appointment.paymentStatus === PaymentStatusEnum.PAID &&
+        appointment.paymentMethod === PaymentMethodEnum.CARD &&
+        [
+          statusEnum.PENDING,
+          statusEnum.CONFIRMED,
+          statusEnum.PROCESSING,
+        ].includes(appointment.status as statusEnum)
+      ) {
+        if (!appointment.paymentIntentId) {
+          throw new BadRequestException(
+            "Appointment does not have a paymentIntentId",
+          );
+        }
+
+        await StripeServices.refundPayment(
+          appointment.paymentIntentId.toString(),
+        );
+
+        const updateCardAppointment = await this._bookModel.updateOne({
+          filter,
+          update: {
+            status: statusEnum.CANCELLED,
+            paymentStatus: PaymentStatusEnum.REFUNDED,
+            $unset: {
+              bookingDate: true,
+              workingSchedule: true,
+              bookingDateExpiredAt: true,
+            },
+            $inc: { __v: 1 },
+          },
+        });
+        if (updateCardAppointment.modifiedCount === 0)
+          throw new BadRequestException("Failed To Update Appointment");
+      } else {
+        throw new BadRequestException("Appointment Can't Canceled");
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Appointment Canceled Successfully" });
+    } catch (error) {
+      throw error;
+    }
   };
 
   updateAppointmentStatus = async (

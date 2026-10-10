@@ -550,7 +550,6 @@ class OrderServices {
 
       return res.status(200).json({ message: "Order Canceled Successfully" });
     } catch (error) {
-      console.log(error);
       throw error;
     }
   };
