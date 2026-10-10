@@ -33,6 +33,7 @@ export const bookAppointmentSchema = {
         to: z.string(),
         isDayOff: z.boolean(),
       }),
+      bookingDate: z.coerce.date(),
     })
     .superRefine((value, ctx) => {
       if (value.patientName.split(" ").length < 2) {

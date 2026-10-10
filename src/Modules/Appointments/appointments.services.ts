@@ -52,6 +52,7 @@ class appointmentServices {
       phone,
       patientName,
       workingSchedule,
+      bookingDate,
     }: bookAppointmentDTO = req.body;
 
     const doctor = await this._doctorModel.findOne({
@@ -119,16 +120,7 @@ class appointmentServices {
       );
     }
 
-    const targetDate = new Date();
-    while (
-      targetDate.toLocaleDateString("en-US", {
-        weekday: "long",
-        timeZone: "UTC",
-      }) !== day
-    ) {
-      targetDate.setUTCDate(targetDate.getUTCDate() + 1);
-    }
-
+    const targetDate = new Date(bookingDate);
     targetDate.setUTCHours(0, 0, 0, 0);
 
     const startOfDay = new Date(targetDate);
