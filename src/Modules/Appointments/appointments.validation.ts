@@ -117,6 +117,17 @@ export const cancelAppointmentSchema = {
   }),
 };
 
+export const getAvailableSlotsSchema = {
+  params: z.strictObject({
+    doctorId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  query: z.strictObject({
+    date: z.coerce.date(),
+  }),
+};
+
 export const updateAppointmentSchema = {
   params: z.strictObject({
     appointmentId: z.string().refine((value) => {

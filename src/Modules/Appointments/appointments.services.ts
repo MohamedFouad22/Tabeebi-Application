@@ -6,6 +6,8 @@ import {
   checkoutAppointmentDTO,
   deleteAppointmentDTO,
   getAppointmentDTO,
+  getAvailableSlotsDTO,
+  getAvailableSlotsQueryDTO,
   getDoctorHistoryDTO,
   rescheduledAppointmentDTO,
   rescheduledAppointmentParamsDTO,
@@ -498,6 +500,87 @@ class appointmentServices {
     } catch (error) {
       throw error;
     }
+  };
+
+  getAvailableSlots = async (
+    req: Request,
+    res: Response,
+  ): Promise<Response> => {
+    const { doctorId } = req.params as getAvailableSlotsDTO;
+    const { date } = req.query as unknown as getAvailableSlotsQueryDTO;
+
+    const day = new Date(date);
+    const dayName = day.toLocaleDateString("en-US", {
+      weekday: "long",
+      timeZone: "UTC",
+    });
+
+    const schedule = await this._doctorModel.findOne({
+      filter: {
+        userId: doctorId,
+        "workingSchedule.day": dayName,
+        "workingSchedule.isDayOff": false,
+      },
+    });
+    if (!schedule)
+      throw new NotFoundException(
+        "The Doctor Isn't Working On This Day, Or The Day Wasn't Found",
+      );
+
+    const slotDuration = schedule.slotDuration;
+
+    const scheduleDay = schedule.workingSchedule.find(
+      (schedule) => schedule.day === dayName,
+    );
+
+    if (!scheduleDay) {
+      throw new NotFoundException("Schedule Day Not Found");
+    }
+
+    const [fromHour = 0, fromMinute = 0] = scheduleDay.from
+      .split(":")
+      .map(Number);
+
+    const [toHour = 0, toMinute = 0] = scheduleDay.to.split(":").map(Number);
+    const from = fromHour * 60 + fromMinute;
+    const to = toHour * 60 + toMinute;
+
+    const timesArray = [];
+    for (let i = from; i < to; i += slotDuration) {
+      const hours = Math.floor(i / 60);
+      const minutes = i % 60;
+      const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+      timesArray.push(time);
+    }
+
+    const targetDate = new Date(date);
+    targetDate.setUTCHours(0, 0, 0, 0);
+    const startOfDay = new Date(targetDate);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+    const checkSlots = await this._bookModel.find({
+      filter: {
+        doctorId,
+        "workingSchedule.day": scheduleDay.day,
+        bookingDate: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        status: { $ne: statusEnum.CANCELLED },
+      },
+    });
+
+    const availableSlots = timesArray.filter((slot) => {
+      const isBooked = checkSlots.some(
+        (booking) => booking.workingSchedule.from === slot,
+      );
+      return !isBooked;
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Get Available Slots Successfully", availableSlots });
   };
 
   updateAppointmentStatus = async (

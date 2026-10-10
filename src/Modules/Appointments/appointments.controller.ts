@@ -11,6 +11,7 @@ import {
   checkoutAppointmentSchema,
   deleteAppointmentSchema,
   getAppointmentSchema,
+  getAvailableSlotsSchema,
   getDoctorHistorySchema,
   getPatientSchema,
   rescheduledAppointmentSchema,
@@ -73,6 +74,12 @@ router.patch(
   ]),
   validation(cancelAppointmentSchema),
   appointmentServices.canceledAppointment,
+);
+
+router.get(
+  "/available-slots/:doctorId",
+  validation(getAvailableSlotsSchema),
+  appointmentServices.getAvailableSlots,
 );
 
 router.patch(

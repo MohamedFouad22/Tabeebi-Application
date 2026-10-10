@@ -5,6 +5,7 @@ import {
   checkoutAppointmentSchema,
   deleteAppointmentSchema,
   getAppointmentSchema,
+  getAvailableSlotsSchema,
   getDoctorHistorySchema,
   getPatientSchema,
   rescheduledAppointmentSchema,
@@ -28,6 +29,12 @@ export type cancelAppointmentDTO = z.infer<
   typeof cancelAppointmentSchema.params
 >;
 export type updateAppointmentDTO = z.infer<typeof updateAppointmentSchema.body>;
+export type getAvailableSlotsDTO = z.infer<
+  typeof getAvailableSlotsSchema.params
+>;
+export type getAvailableSlotsQueryDTO = z.infer<
+  typeof getAvailableSlotsSchema.query
+>;
 export type updateAppointmentParamsDTO = z.infer<
   typeof updateAppointmentSchema.params
 >;
