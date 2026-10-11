@@ -147,6 +147,37 @@ export const deleteAppointmentSchema = {
   }),
 };
 
+export const cancelSlotsSchema = {
+  params: z.strictObject({
+    doctorId: z.string().refine((value) => {
+      return Types.ObjectId.isValid(value);
+    }),
+  }),
+  body: z
+    .strictObject({
+      date: z.coerce.date(),
+      from: z.string(),
+      to: z.string(),
+      reason: z.string().min(2).max(500).trim().optional(),
+    })
+    .superRefine((value, ctx) => {
+      if (value.from.split(":").length !== 2) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["from"],
+          message: "From Date Must Be Hour And Minute Such 09:00",
+        });
+      }
+      if (value.to.split(":").length !== 2) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["to"],
+          message: "To Date Must Be Hour And Minute Such 17:00",
+        });
+      }
+    }),
+};
+
 export const checkoutAppointmentSchema = {
   params: z.strictObject({
     appointmentId: z.string().refine((value) => {

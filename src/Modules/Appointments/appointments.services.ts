@@ -3,6 +3,8 @@ import {
   bookAppointmentDTO,
   bookAppointmentParamsDTO,
   cancelAppointmentDTO,
+  cancelSlotDTO,
+  cancelSlotParamsDTO,
   checkoutAppointmentDTO,
   deleteAppointmentDTO,
   getAppointmentDTO,
@@ -36,12 +38,15 @@ import { UserRepository } from "../../DB/Repositories/user.repository";
 import { userModel } from "../../DB/Models/user.model";
 import StripeServices from "../../Utils/Payments/Stripe/stripe.payment.utils";
 import Stripe from "stripe";
+import { BlockedRepository } from "../../DB/Repositories/blocked.repository";
+import { blockedModel } from "../../DB/Models/blockedSlots.model";
 
 class appointmentServices {
   private _bookModel = new BookingRepository(bookingModel);
   private _doctorModel = new DoctorRepository(doctorModel);
   private _clinicModel = new ClinicRepository(clinicModel);
   private _userModel = new UserRepository(userModel);
+  private _blockedModel = new BlockedRepository(blockedModel);
   constructor() {}
 
   bookAppointment = async (req: Request, res: Response): Promise<Response> => {
@@ -132,6 +137,24 @@ class appointmentServices {
     const bookingExpiryDate = new Date(targetDate);
     bookingExpiryDate.setUTCHours(23, 59, 59, 999);
 
+    const checkBlockedSlot = await this._blockedModel.findOne({
+      filter: {
+        doctorId,
+        date: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        from,
+        to,
+      },
+    });
+
+    if (checkBlockedSlot) {
+      throw new ConflictException(
+        "This appointment slot has been blocked by the doctor",
+      );
+    }
+
     const checkAvailableAppointment = await this._bookModel.findOne({
       filter: {
         doctorId,
@@ -186,7 +209,7 @@ class appointmentServices {
           day: "numeric",
           timeZone: "UTC",
         }),
-        time: `${from} - ${to}`,
+        time: `${from}\n${to}`,
       }).catch((err) => console.error("WhatsApp Notification Error:", err));
 
       return res.status(201).json({
@@ -384,6 +407,50 @@ class appointmentServices {
       targetDate.setUTCDate(targetDate.getUTCDate() + 1);
     }
     targetDate.setUTCHours(0, 0, 0, 0);
+
+    const startOfDay = new Date(targetDate);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+    const targetDoctorId = doctorId || req.decoded._id;
+
+    const checkBlockedSlot = await this._blockedModel.findOne({
+      filter: {
+        doctorId: targetDoctorId,
+        date: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        from,
+        to,
+      },
+    });
+
+    if (checkBlockedSlot) {
+      throw new ConflictException(
+        "This appointment slot has been blocked by the doctor",
+      );
+    }
+
+    const checkAvailableAppointment = await this._bookModel.findOne({
+      filter: {
+        doctorId: targetDoctorId,
+        bookingDate: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        "workingSchedule.from": from,
+        "workingSchedule.to": to,
+        status: { $ne: statusEnum.CANCELLED },
+        _id: { $ne: appointmentId },
+      },
+    });
+
+    if (checkAvailableAppointment) {
+      throw new ConflictException(
+        "This appointment slot has been booked by someone else",
+      );
+    }
 
     const appointment = await this._bookModel.findOneAndUpdate({
       filter,
@@ -636,6 +703,101 @@ class appointmentServices {
     return res
       .status(200)
       .json({ message: "Appointment Deleted Successfully" });
+  };
+
+  cancelSlot = async (req: Request, res: Response): Promise<Response> => {
+    const { doctorId } = req.params as cancelSlotParamsDTO;
+    const { from, to, date, reason }: cancelSlotDTO = req.body;
+
+    const day = new Date(date);
+    const dayName = day.toLocaleDateString("en-US", {
+      weekday: "long",
+      timeZone: "UTC",
+    });
+
+    const doctor = await this._doctorModel.findOne({
+      filter: {
+        userId: doctorId,
+        "workingSchedule.day": dayName,
+        "workingSchedule.isDayOff": false,
+      },
+    });
+    if (!doctor)
+      throw new NotFoundException(
+        "The Doctor Isn't Working On This Day, Or The Day Wasn't Found",
+      );
+
+    const slotDuration = doctor.slotDuration;
+
+    const schedule = doctor.workingSchedule.find((schedule) => {
+      return schedule.day === dayName;
+    });
+    if (!schedule) {
+      throw new NotFoundException("Schedule Day Not Found");
+    }
+
+    const [fromHour = 0, fromMinute = 0] = schedule?.from
+      .split(":")
+      .map(Number);
+    const [toHour = 0, toMinute = 0] = schedule?.to.split(":").map(Number);
+
+    const fromTime = fromHour * 60 + fromMinute;
+    const toTime = toHour * 60 + toMinute;
+
+    let timesArray = [];
+    for (let i = fromTime; i < toTime; i += slotDuration) {
+      const hours = Math.floor(i / 60);
+      const minutes = i % 60;
+      const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+      timesArray.push(time);
+    }
+
+    const isValidFrom = timesArray.includes(from);
+    const isValidTo = timesArray.includes(to);
+
+    if (!isValidFrom || !isValidTo) {
+      throw new BadRequestException(
+        "The requested slot times are not within the doctor's working schedule",
+      );
+    }
+
+    const targetDate = new Date(date);
+    targetDate.setUTCHours(0, 0, 0, 0);
+    const startOfDay = new Date(targetDate);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+    const [blocked] = await this._blockedModel.create({
+      data: [
+        {
+          doctorId,
+          date,
+          from,
+          to,
+          reason,
+        },
+      ],
+    });
+    if (!blocked) throw new BadRequestException("Failed To Block Slots");
+
+    await this._bookModel.updateMany({
+      filter: {
+        doctorId,
+        bookingDate: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        "workingSchedule.from": from,
+        "workingSchedule.to": to,
+        status: { $ne: statusEnum.CANCELLED },
+      },
+      update: {
+        $set: { status: statusEnum.CANCELLED },
+        $inc: { __v: 1 },
+      },
+    });
+
+    return res.status(200).json({ message: "Slots Canceled Successfully" });
   };
 
   checkoutAppointment = async (

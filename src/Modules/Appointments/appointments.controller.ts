@@ -8,6 +8,7 @@ import { validation } from "../../Middleware/validation.middleware";
 import {
   bookAppointmentSchema,
   cancelAppointmentSchema,
+  cancelSlotsSchema,
   checkoutAppointmentSchema,
   deleteAppointmentSchema,
   getAppointmentSchema,
@@ -94,6 +95,13 @@ router.delete(
   authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN]),
   validation(deleteAppointmentSchema),
   appointmentServices.deleteAppointment,
+);
+
+router.delete(
+  "/cancel-slot/:doctorId",
+  authentication(TokenTypeEnum.ACCESS, [RoleEnum.ADMIN, RoleEnum.DOCTOR]),
+  validation(cancelSlotsSchema),
+  appointmentServices.cancelSlot,
 );
 
 router.post(

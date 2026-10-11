@@ -2,6 +2,7 @@ import * as z from "zod";
 import {
   bookAppointmentSchema,
   cancelAppointmentSchema,
+  cancelSlotsSchema,
   checkoutAppointmentSchema,
   deleteAppointmentSchema,
   getAppointmentSchema,
@@ -41,6 +42,8 @@ export type updateAppointmentParamsDTO = z.infer<
 export type deleteAppointmentDTO = z.infer<
   typeof deleteAppointmentSchema.params
 >;
+export type cancelSlotParamsDTO = z.infer<typeof cancelSlotsSchema.params>;
+export type cancelSlotDTO = z.infer<typeof cancelSlotsSchema.body>;
 export type checkoutAppointmentDTO = z.infer<
   typeof checkoutAppointmentSchema.params
 >;
