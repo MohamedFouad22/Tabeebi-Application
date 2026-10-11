@@ -137,19 +137,26 @@ class appointmentServices {
     const bookingExpiryDate = new Date(targetDate);
     bookingExpiryDate.setUTCHours(23, 59, 59, 999);
 
-    const checkBlockedSlot = await this._blockedModel.findOne({
+    const targetDoctorId = doctor.userId || doctorId;
+
+    const blockedSlots = await this._blockedModel.find({
       filter: {
-        doctorId,
+        doctorId: targetDoctorId,
         date: {
           $gte: startOfDay,
           $lt: endOfDay,
         },
-        from,
-        to,
       },
     });
 
-    if (checkBlockedSlot) {
+    const isBlocked = blockedSlots.some((slot) => {
+      const blockFromMinutes = timeToMinutes(slot.from);
+      const blockToMinutes = timeToMinutes(slot.to);
+
+      return requestFromMin < blockToMinutes && requestToMin > blockFromMinutes;
+    });
+
+    if (isBlocked) {
       throw new ConflictException(
         "This appointment slot has been blocked by the doctor",
       );
@@ -157,7 +164,7 @@ class appointmentServices {
 
     const checkAvailableAppointment = await this._bookModel.findOne({
       filter: {
-        doctorId,
+        doctorId: targetDoctorId,
         bookingDate: {
           $gte: startOfDay,
           $lt: endOfDay,
@@ -179,7 +186,7 @@ class appointmentServices {
         data: [
           {
             patientId: req.decoded._id,
-            doctorId: doctor.userId,
+            doctorId: targetDoctorId,
             clinicId: req.body.clinicId || undefined,
             workingSchedule,
             status,
